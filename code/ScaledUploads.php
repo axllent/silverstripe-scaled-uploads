@@ -54,7 +54,7 @@ class ScaledUploads extends DataExtension {
 				/* If rotation allowed & JPG, test to see if orientation needs switching */
 				if (self::$exif_rotation && preg_match('/jpe?g/i', $extension)) {
 					$switchorientation = $this->exifRotation($original);
-					if ($switchorientation & $transformed) {
+					if ($switchorientation) {
 						$transformed = $transformed->rotate($switchorientation);
 					}
 				}
