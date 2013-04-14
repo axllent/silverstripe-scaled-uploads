@@ -1,5 +1,5 @@
 # Automatically scale down uploaded images for SilverStripe 3
-An extension to automatically scale down all uploaded images in SilverStripe 3. If the uploaded
+An extension to automatically scale down all new uploaded images in SilverStripe 3. If the uploaded
 image is larger than a pre-configured size, it will be scaled down. The extension also supports
 auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones.
 
