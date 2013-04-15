@@ -8,10 +8,7 @@
  * based on EXIF data (eg: images from digital cameras).
  *
  * Options:
- * In your _config.php you may set different defaults, eg:
- *   ScaledUploads::$max_width = 800;
- *   ScaledUploads::$max_height = 600;
- *   ScaledUploads::$exif_rotation = true;
+ * Please refer to the README.md
  *
  * @license: MIT-style license http://opensource.org/licenses/MIT
  * @author: Techno Joy development team (www.technojoy.co.nz)
