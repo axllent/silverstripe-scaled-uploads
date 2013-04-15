@@ -8,9 +8,14 @@ auto-rotation of JPG images eg: portrait images taken with digital cameras or ce
 * GD support in PHP
 
 ## Usage
-In your mysite/_config.php you may set different defaults, eg:
+Simply install the module. All images are (by default) scaled to a maximum width of 960px and a height of 800px
+(whichever is the greater), and auto-rotation (based on EXIF data) for JPEG images is by default **on**.
+
+#Configuration
+Create or edit a *.yml file in your mysite/_config/ folder (eg: mysite/_config/config.yml) and add/edit the following (use spaces, not tabs):
 <pre>
-ScaledUploads::$max_width = 800; // set max height to 800px
-ScaledUploads::$max_height = 600; // set max width to 600px
-ScaledUploads::$exif_rotation = false; // turn off auto-rotation
+ScaledUploads:
+  max-width: 960
+  max-height: 800
+  auto-rotate: 0
 </pre>
