@@ -11,7 +11,7 @@ auto-rotation of JPG images eg: portrait images taken with digital cameras or ce
 Simply install the module. All images are (by default) scaled to a maximum width of 960px and a height of 800px
 (whichever is the greater), and auto-rotation (based on EXIF data) for JPEG images is by default **on**.
 
-#Configuration
+## Configuration
 Create or edit a *.yml file in your mysite/_config/ folder (eg: mysite/_config/config.yml) and add/edit the following (use spaces, not tabs):
 <pre>
 ScaledUploads:
