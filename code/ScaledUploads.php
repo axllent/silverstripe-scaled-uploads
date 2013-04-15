@@ -19,24 +19,30 @@
 
 class ScaledUploads extends DataExtension {
 
-	public static $max_width = 960;
-	public static $max_height = 800;
-	public static $exif_rotation = true;
+	// public static $max_width = 960;
+	// public static $max_height = 800;
+	// public static $exif_rotation = true;
 
 	public function onAfterWrite() {
 		$this->ScaleUpload();
 	}
 
 	public function getMaxWidth() {
-		return self::$max_width;
+		return Config::inst()->get('ScaledUploads', 'max-width');
+		// $w = Config::inst()->get('ScaledUploads', 'max-width');
+		// return ($w) ? $w : 960;
 	}
 
 	public function getMaxHeight() {
-		return self::$max_height;
+		return Config::inst()->get('ScaledUploads', 'max-height');
 	}
 
 	public function getMinSize() {
-		return (self::$max_width > self::$max_height) ? self::$max_height : self::$max_width;
+		return ($this->getMaxWidth() > $this->getMaxHeight()) ? $this->getMaxHeight() : $this->getMaxWidth();
+	}
+
+	public function getAutoRotate() {
+		return (Config::inst()->get('ScaledUploads', 'auto-rotate') == 'true') ? true : false;
 	}
 
 	public function ScaleUpload() {
@@ -45,14 +51,12 @@ class ScaledUploads extends DataExtension {
 		if($this->owner->getHeight() > $this->getMinSize() || $this->owner->getWidth() > $this->getMinSize()) {
 			$original = $this->owner->getFullPath();
 			$resampled = $original . '.tmp.' . $extension;
-
 			$gd = new GD($original);
-
 			if($gd->hasGD()) {
 				/* Clone original */
 				$transformed = $gd;
 				/* If rotation allowed & JPG, test to see if orientation needs switching */
-				if (self::$exif_rotation && preg_match('/jpe?g/i', $extension)) {
+				if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
 					$switchorientation = $this->exifRotation($original);
 					if ($switchorientation) {
 						$transformed = $transformed->rotate($switchorientation);
