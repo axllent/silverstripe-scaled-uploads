@@ -19,22 +19,22 @@
 
 class ScaledUploads extends DataExtension {
 
-	// public static $max_width = 960;
-	// public static $max_height = 800;
-	// public static $exif_rotation = true;
+	public static $max_width = 960;
+	public static $max_height = 800;
+	public static $exif_rotation = true;
 
 	public function onAfterWrite() {
 		$this->ScaleUpload();
 	}
 
 	public function getMaxWidth() {
-		return Config::inst()->get('ScaledUploads', 'max-width');
-		// $w = Config::inst()->get('ScaledUploads', 'max-width');
-		// return ($w) ? $w : 960;
+		$w = Config::inst()->get('ScaledUploads', 'max-width');
+		return ($w) ? $w : self::$max_width;
 	}
 
 	public function getMaxHeight() {
-		return Config::inst()->get('ScaledUploads', 'max-height');
+		$h = Config::inst()->get('ScaledUploads', 'max-height');
+		return ($h) ? $h : self::$max_height;
 	}
 
 	public function getMinSize() {
@@ -42,7 +42,9 @@ class ScaledUploads extends DataExtension {
 	}
 
 	public function getAutoRotate() {
-		return (Config::inst()->get('ScaledUploads', 'auto-rotate') == 'true') ? true : false;
+		$r = Config::inst()->get('ScaledUploads', 'auto-rotate');
+		if ($r === 0 || $r == 'false') return false;
+		return self::$exif_rotation;
 	}
 
 	public function ScaleUpload() {
