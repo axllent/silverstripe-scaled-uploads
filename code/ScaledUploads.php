@@ -34,10 +34,6 @@ class ScaledUploads extends DataExtension {
 		return ($h) ? $h : self::$max_height;
 	}
 
-	public function getMinSize() {
-		return ($this->getMaxWidth() > $this->getMaxHeight()) ? $this->getMaxHeight() : $this->getMaxWidth();
-	}
-
 	public function getAutoRotate() {
 		$r = Config::inst()->get('ScaledUploads', 'auto-rotate');
 		if ($r === 0 || $r == 'false') return false;
@@ -47,7 +43,7 @@ class ScaledUploads extends DataExtension {
 	public function ScaleUpload() {
 		$extension = strtolower($this->owner->getExtension());
 
-		if($this->owner->getHeight() > $this->getMinSize() || $this->owner->getWidth() > $this->getMinSize()) {
+		if($this->owner->getHeight() > $this->getMaxHeight() || $this->owner->getWidth() > $this->getMaxWidth()) {
 			$original = $this->owner->getFullPath();
 			$resampled = $original . '.tmp.' . $extension;
 			$gd = new GD($original);
