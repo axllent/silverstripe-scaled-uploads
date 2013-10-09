@@ -47,7 +47,9 @@ class ScaledUploads extends DataExtension {
 			$original = $this->owner->getFullPath();
 			$resampled = $original . '.tmp.' . $extension;
 			$gd = new GD($original);
-			if($gd->hasGD()) {
+			/* Backwards compatibility with SilverStripe 3.0 */
+			$image_loaded = (method_exists('GD', 'hasImageResource')) ? $gd->hasImageResource() : $gd->hasGD();
+			if ($image_loaded) {
 				/* Clone original */
 				$transformed = $gd;
 				/* If rotation allowed & JPG, test to see if orientation needs switching */
