@@ -14,8 +14,7 @@
         "issues": "https://github.com/axllent/silverstripe-scaled-uploads/issues"
     },
     "require": {
-        "silverstripe/framework": ">=3.1",
-        "silverstripe/cms": ">=3.1"
+        "silverstripe/framework": "3.*"
     },
     "extra": {
         "installer-name": "scaleduploads"
