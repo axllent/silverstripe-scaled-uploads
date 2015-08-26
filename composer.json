@@ -3,7 +3,7 @@
 	"description": "Automatically scale down and rotate uploaded images for SilverStripe",
 	"type": "silverstripe-module",
 	"homepage": "https://github.com/axllent/silverstripe-scaled-uploads",
-	"keywords": ["silverstripe", "uploads", "scaled", "rotate"],
+	"keywords": ["silverstripe", "uploads", "image", "upload", "scaled", "rotate"],
 	"license": "The MIT License (MIT)",
 	"authors": [
 		{

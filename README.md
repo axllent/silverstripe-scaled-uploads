@@ -21,3 +21,13 @@ ScaledUploads:
   max-height: 800
   auto-rotate: 0
 ```
+
+If you require larger images for a particular DataObject (such as full-page slideshows), but wish to keep all
+other uploads scaled to a pre-set default, you can simply add something like this to your DataObject:
+```
+public function onBeforeWrite() {
+	Config::inst()->update('ScaledUploads', 'max-width', 1600);
+	Config::inst()->update('ScaledUploads', 'max-1200', 1600);
+	parent::onBeforeWrite();
+}
+```

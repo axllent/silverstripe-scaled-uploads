@@ -17,11 +17,74 @@
 class ScaledUploads extends DataExtension {
 
 	public static $max_width = 960;
+
 	public static $max_height = 800;
+
 	public static $exif_rotation = true;
 
-	public function onAfterWrite() {
+	public function onBeforeWrite() {
 		$this->ScaleUpload();
+	}
+
+	public function ScaleUpload() {
+
+		/* don't use Image->exists() as it is implemented differently for Image */
+		if ($this->owner->ID > 0) {
+			return; // only run with new images
+		}
+
+		$extension = $this->owner->getExtension();
+
+		if (
+			$this->owner->getHeight() > $this->getMaxHeight()
+			|| $this->owner->getWidth() > $this->getMaxWidth()
+			|| ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension))
+		) {
+
+			$original = $this->owner->getFullPath();
+
+			/* temporary location for image manipulation */
+			$resampled = TEMP_FOLDER .'/resampled-' . mt_rand(100000,999999) . '.' . $extension;
+
+			$gd = new GD($original);
+
+			/* Backwards compatibility with SilverStripe 3.0 */
+			$image_loaded = (method_exists('GD', 'hasImageResource')) ? $gd->hasImageResource() : $gd->hasGD();
+
+			if ($image_loaded) {
+
+				/* Clone original */
+				$transformed = $gd;
+
+				/* If rotation allowed & JPG, test to see if orientation needs switching */
+				if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
+					$switch_orientation = $this->exifRotation($original);
+					if ($switch_orientation) {
+						$transformed = $transformed->rotate($switch_orientation);
+					}
+				}
+
+				/* Resize to max values */
+				if (
+					$transformed && (
+						$transformed->getWidth() > $this->getMaxWidth()
+						|| $transformed->getHeight() > $this->getMaxHeight()
+					)
+				) {
+					$transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
+				}
+
+				/* Write to tmp file and then overwrite original */
+				if ($transformed) {
+					$transformed->writeTo($resampled);
+					file_put_contents($original, file_get_contents($resampled));
+					unlink($resampled);
+				}
+
+			}
+
+		}
+
 	}
 
 	public function getMaxWidth() {
@@ -40,49 +103,20 @@ class ScaledUploads extends DataExtension {
 		return self::$exif_rotation;
 	}
 
-	public function ScaleUpload() {
-		$extension = strtolower($this->owner->getExtension());
-
-		if($this->owner->getHeight() > $this->getMaxHeight() || $this->owner->getWidth() > $this->getMaxWidth()) {
-			$original = $this->owner->getFullPath();
-			$resampled = $original . '.tmp.' . $extension;
-			$gd = new GD($original);
-			/* Backwards compatibility with SilverStripe 3.0 */
-			$image_loaded = (method_exists('GD', 'hasImageResource')) ? $gd->hasImageResource() : $gd->hasGD();
-			if ($image_loaded) {
-				/* Clone original */
-				$transformed = $gd;
-				/* If rotation allowed & JPG, test to see if orientation needs switching */
-				if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
-					$switchorientation = $this->exifRotation($original);
-					if ($switchorientation) {
-						$transformed = $transformed->rotate($switchorientation);
-					}
-				}
-				/* Resize to max values */
-				if ($transformed) {
-					$transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
-				}
-				/* Overwrite original upload with resampled */
-				if ($transformed) {
-					$transformed->writeTo($resampled);
-					unlink($original);
-					rename($resampled, $original);
-				}
-			}
-		}
-	}
-
-	/*
+	/**
 	 * exifRotation - return the exif rotation
-	 * @param string $FileName
-	 * @return int false|angle
+	 * @param String $FileName
+	 * @return Int false|angle
 	 */
 	public function exifRotation($file) {
 		$exif = @exif_read_data($file);
-		if (!$exif) return false;
+		if (!$exif) {
+			return false;
+		}
 		$ort = @$exif['IFD0']['Orientation'];
-		if (!$ort) $ort = @$exif['Orientation'];
+		if (!$ort) {
+			$ort = @$exif['Orientation'];
+		}
 		switch($ort) {
 			case 3: // image upside down
 				return '180';
