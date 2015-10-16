@@ -31,3 +31,12 @@ public function onBeforeWrite() {
 	parent::onBeforeWrite();
 }
 ```
+
+If you need to bypass (skip) ScaledUploads for any particular reason, use:
+```
+Config::inst()->update('ScaledUploads', 'bypass', true);
+```
+or
+```
+ScaledUploads::$bypass = true;
+```

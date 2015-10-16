@@ -20,6 +20,8 @@ class ScaledUploads extends DataExtension {
 
 	public static $max_height = 800;
 
+	public static $bypass = false;
+
 	public static $exif_rotation = true;
 
 	public function onBeforeWrite() {
@@ -29,7 +31,7 @@ class ScaledUploads extends DataExtension {
 	public function ScaleUpload() {
 
 		/* don't use Image->exists() as it is implemented differently for Image */
-		if ($this->owner->ID > 0) {
+		if ($this->owner->ID > 0 || $this->getBypass()) {
 			return; // only run with new images
 		}
 
@@ -85,6 +87,11 @@ class ScaledUploads extends DataExtension {
 
 		}
 
+	}
+
+	public function getBypass() {
+		$w = Config::inst()->get('ScaledUploads', 'bypass');
+		return ($w) ? $w : self::$bypass;
 	}
 
 	public function getMaxWidth() {
