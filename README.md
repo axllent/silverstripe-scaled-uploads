@@ -27,7 +27,7 @@ other uploads scaled to a pre-set default, you can simply add something like thi
 ```
 public function onBeforeWrite() {
 	Config::inst()->update('ScaledUploads', 'max-width', 1600);
-	Config::inst()->update('ScaledUploads', 'max-1200', 1600);
+	Config::inst()->update('ScaledUploads', 'max-height', 1600);
 	parent::onBeforeWrite();
 }
 ```
