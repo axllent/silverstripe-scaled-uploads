@@ -1,4 +1,16 @@
 <?php
+
+namespace Axllent\ScaledUploads;
+
+
+use GD;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Control\Director;
+
+use SilverStripe\Assets\GDBackend;
+
+
 /**
  * Automatically scale down uploaded images
  * ========================================
@@ -45,6 +57,72 @@ class ScaledUploads extends DataExtension
             || $this->owner->getWidth() > $this->getMaxWidth()
             || ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension))
         ) {
+
+            // die($this->owner->FileName);
+
+            // var_dump($this->owner->getURL());
+
+
+            /* temporary location for image manipulation */
+            $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $extension;
+
+            // write to tmp file
+
+            file_put_contents($tmp_image, $this->owner->getString());
+
+            $gd = new GDBackend();
+
+            $gd->loadFrom($tmp_image);
+
+            if ($gd->getImageResource()) {
+
+                /* Clone original */
+                $transformed = $gd;
+
+                /* If rotation allowed & JPG, test to see if orientation needs switching */
+                if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
+                    $switch_orientation = $this->exifRotation($tmp_image);
+                    if ($switch_orientation) {
+                        $transformed = $transformed->rotate($switch_orientation);
+                    }
+                }
+
+                /* Resize to max values */
+                if (
+                    $transformed && (
+                        $transformed->getWidth() > $this->getMaxWidth()
+                        || $transformed->getHeight() > $this->getMaxHeight()
+                    )
+                ) {
+                    $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
+                }
+
+                /* Write to tmp file and then overwrite original */
+                if ($transformed) {
+                    $transformed->writeTo($tmp_image);
+
+                    $this->owner->setFromString(file_get_contents($tmp_image), $this->owner->FileName);
+                    // $this->owner->setFromLocalFile($tmp_image);
+                    // $this->owner->write();
+                    // file_put_contents($original, file_get_contents($resampled));
+                    unlink($tmp_image);
+                }
+
+            }
+            return;
+            // die();
+
+            // var_dump($this->owner->getContentURL())
+            //
+            // var_dump($this->owner);
+
+            // $gd = new GDBackend();
+            //
+            //
+            //
+            // $gd->loadFrom($fullPath);
+
+
             $original = $this->owner->getFullPath();
 
             /* temporary location for image manipulation */
@@ -90,25 +168,25 @@ class ScaledUploads extends DataExtension
 
     public function getBypass()
     {
-        $w = Config::inst()->get('ScaledUploads', 'bypass');
+        $w = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'bypass');
         return ($w) ? $w : self::$bypass;
     }
 
     public function getMaxWidth()
     {
-        $w = Config::inst()->get('ScaledUploads', 'max-width');
+        $w = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-width');
         return ($w) ? $w : self::$max_width;
     }
 
     public function getMaxHeight()
     {
-        $h = Config::inst()->get('ScaledUploads', 'max-height');
+        $h = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-height');
         return ($h) ? $h : self::$max_height;
     }
 
     public function getAutoRotate()
     {
-        $r = Config::inst()->get('ScaledUploads', 'auto-rotate');
+        $r = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'auto-rotate');
         if ($r === 0 || $r == 'false') {
             return false;
         }
