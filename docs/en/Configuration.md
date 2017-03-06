@@ -18,7 +18,6 @@ Axllent\ScaledUploads\ScaledUploads:
 ```
 
 If you require larger images for a particular DataObject (such as full-width banner), but wish to keep all other uploads scaled to a pre-set default, you can simply add something like this to your DataObject:
-If you require larger images for a particular DataObject (such as full-width banner), but wish to keep all other uploads scaled to a pre-set default, you can simply add something like this to your DataObject:
 
 ```php
 <?php
