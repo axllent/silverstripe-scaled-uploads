@@ -105,9 +105,10 @@ class ScaledUploads extends Extension
 
                 $file->setFromLocalFile($tmp_image, $file->FileName); // set new image
 
-                unlink($tmp_image); // delete tmp file
             }
         }
+
+        @unlink($tmp_image); // delete tmp file
     }
 
     public function getBypass()
