@@ -7,9 +7,12 @@ An extension to automatically scale down all new uploaded images in SilverStripe
 - SilverStripe 4+
 - GD support in PHP
 
+For SilverStripe 3, please refer to the [SilverStripe3 branch](https://github.com/axllent/silverstripe-scaled-uploads/tree/silverstripe3).
+
+
 ## Usage
 
-Simply install the module. All images are (by default) scaled to a maximum size of 960px (width) X 800px (height), and auto-rotation (based on EXIF data) for JPG images is by default **on**. Please note that EXIF rotation only works if the uploaded image is larger than the specified values, and of course is present.
+Simply install the module. All images are (by default) scaled to a maximum size of 960px (width) X 800px (height), and auto-rotation (based on EXIF data) for JPG images is by default **on**.
 
 ## Configuration
 
@@ -22,19 +25,4 @@ Axllent\ScaledUploads\ScaledUploads:
   auto-rotate: false
 ```
 
-If you require larger images for a particular DataObject (such as full-page slideshows), but wish to keep all other uploads scaled to a pre-set default, you can simply add something like this to your DataObject:
-
-```
-public function onBeforeWrite()
-{
-    Config::inst()->update('Axllent\ScaledUploads\ScaledUploads', 'max-width', 1600);
-    Config::inst()->update('Axllent\ScaledUploads\ScaledUploads', 'max-height', 1600);
-    parent::onBeforeWrite();
-}
-```
-
-If you need to bypass (skip) ScaledUploads for any particular reason, use:
-
-```
-Config::inst()->update('Axllent\ScaledUploads\ScaledUploads', 'bypass', true);
-```
+Please refer to the [Configuration docs](docs/en/Configuration.md) for more options.
