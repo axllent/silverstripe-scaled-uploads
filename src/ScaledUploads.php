@@ -5,7 +5,7 @@ namespace Axllent\ScaledUploads;
 use SilverStripe\Assets\GDBackend;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 
 /**
  * Automatically scale down uploaded images
@@ -22,44 +22,37 @@ use SilverStripe\ORM\DataExtension;
  * @author: Techno Joy development team (www.technojoy.co.nz)
  */
 
-class ScaledUploads extends DataExtension
+class ScaledUploads extends Extension
 {
 
-    public static $max_width = 960;
-
-    public static $max_height = 800;
-
-    public static $bypass = false;
-
-    public static $exif_rotation = true;
-
-    public function onBeforeWrite()
+    public function __construct()
     {
-        /**
-         * Only run if new image
-         * don't use Image->exists() as it is implemented differently for Image
-         */
-        if ($this->owner->ID || $this->getBypass()) {
-            return; // only run with new images
+        $this->config = Config::inst();
+    }
+
+    public function onAfterLoadIntoFile($file)
+    {
+        if ($this->getBypass() || !$file->IsImage) {
+            return;
         }
 
-        $extension = $this->owner->getExtension();
+        $extension = $file->getExtension();
 
         if (
-            $this->owner->getHeight() > $this->getMaxHeight() ||
-            $this->owner->getWidth() > $this->getMaxWidth() ||
-            ($this->getAutoRotate() && preg_match('/jpe?g/i', $this->owner->getExtension()))
+            ($this->getMaxHeight() && $file->getHeight() > $this->getMaxHeight()) ||
+            ($this->getMaxWidth() && $file->getWidth() > $this->getMaxWidth()) ||
+            ($this->getAutoRotate() && preg_match('/jpe?g/i', $file->getExtension()))
         ) {
-            $this->ScaleUploadedImage();
+            $this->ScaleUploadedImage($file);
         }
     }
 
-    public function ScaleUploadedImage()
+    private function ScaleUploadedImage($file)
     {
         /* temporary location for image manipulation */
-        $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $this->owner->getExtension();
+        $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
 
-        $tmp_contents = $this->owner->getString();
+        $tmp_contents = $file->getString();
 
         // write to tmp file
         @file_put_contents($tmp_image, $tmp_contents);
@@ -69,37 +62,48 @@ class ScaledUploads extends DataExtension
         $gd->loadFrom($tmp_image);
 
         if ($gd->getImageResource()) {
+            $modified = false;
 
             /* Clone original */
             $transformed = $gd;
 
             /* If rotation allowed & JPG, test to see if orientation needs switching */
-            if ($this->getAutoRotate() && preg_match('/jpe?g/i', $this->owner->getExtension())) {
+            if ($this->getAutoRotate() && preg_match('/jpe?g/i', $file->getExtension())) {
                 $switch_orientation = $this->exifRotation($tmp_image);
+                // die('rotating?: ' . $switch_orientation);
                 if ($switch_orientation) {
+                    $modified = true;
                     $transformed = $transformed->rotate($switch_orientation);
                 }
             }
 
             /* Resize to max values */
             if (
-                $transformed && (
-                    $transformed->getWidth() > $this->getMaxWidth() ||
-                    $transformed->getHeight() > $this->getMaxHeight()
+                $transformed &&
+                (
+                    ($this->getMaxWidth() && $transformed->getWidth() > $this->getMaxWidth()) ||
+                    ($this->getMaxHeight() && $transformed->getHeight() > $this->getMaxHeight())
                 )
             ) {
-                $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
+                if ($this->getMaxWidth() && $this->getMaxHeight()) {
+                    $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
+                } elseif ($this->getMaxWidth()) {
+                    $transformed = $transformed->resizeByWidth($this->getMaxWidth());
+                } else {
+                    $transformed = $transformed->resizeByHeight($this->getMaxHeight());
+                }
+                $modified = true;
             }
 
             /* Write to tmp file and then overwrite original */
-            if ($transformed) {
-                $orig_hash = $this->owner->getHash();
+            if ($transformed && $modified) {
+                $orig_hash = $file->getHash();
 
                 $transformed->writeTo($tmp_image);
 
-                $this->owner->File->deleteFile(); // delete original else a rogue copy is left
+                $file->File->deleteFile(); // delete original else a rogue copy is left
 
-                $this->owner->setFromLocalFile($tmp_image, $this->owner->FileName); // set new image
+                $file->setFromLocalFile($tmp_image, $file->FileName); // set new image
 
                 unlink($tmp_image); // delete tmp file
             }
@@ -108,29 +112,22 @@ class ScaledUploads extends DataExtension
 
     public function getBypass()
     {
-        $w = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'bypass');
-        return ($w) ? $w : self::$bypass;
+        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'bypass');
     }
 
     public function getMaxWidth()
     {
-        $w = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-width');
-        return ($w) ? $w : self::$max_width;
+        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-width');
     }
 
     public function getMaxHeight()
     {
-        $h = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-height');
-        return ($h) ? $h : self::$max_height;
+        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-height');
     }
 
     public function getAutoRotate()
     {
-        $r = Config::inst()->get('Axllent\\ScaledUploads\\ScaledUploads', 'auto-rotate');
-        if ($r === 0 || $r == 'false') {
-            return false;
-        }
-        return self::$exif_rotation;
+        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'auto-rotate');
     }
 
     /**
@@ -141,6 +138,7 @@ class ScaledUploads extends DataExtension
     public function exifRotation($file)
     {
         $exif = @exif_read_data($file);
+        // var_dump($exif);
         if (!$exif) {
             return false;
         }
@@ -152,10 +150,10 @@ class ScaledUploads extends DataExtension
             case 3: // image upside down
                 return '180';
             break;
-            case 6: // 90 rotate right & switch max sizes
+            case 6: // 90 rotate right
                 return '-90';
             break;
-            case 8: // 90 rotate left & switch max sizes
+            case 8: // 90 rotate left
                 return '90';
             break;
             default:
