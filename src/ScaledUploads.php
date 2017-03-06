@@ -2,14 +2,10 @@
 
 namespace Axllent\ScaledUploads;
 
-
-use GD;
+use SilverStripe\Assets\GDBackend;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\ORM\DataExtension;
-use SilverStripe\Control\Director;
-
-use SilverStripe\Assets\GDBackend;
-
 
 /**
  * Automatically scale down uploaded images
@@ -39,129 +35,73 @@ class ScaledUploads extends DataExtension
 
     public function onBeforeWrite()
     {
-        $this->ScaleUpload();
-    }
-
-    public function ScaleUpload()
-    {
-
-        /* don't use Image->exists() as it is implemented differently for Image */
-        if ($this->owner->ID > 0 || $this->getBypass()) {
+        /**
+         * Only run if new image
+         * don't use Image->exists() as it is implemented differently for Image
+         */
+        if ($this->owner->ID || $this->getBypass()) {
             return; // only run with new images
         }
 
         $extension = $this->owner->getExtension();
 
         if (
-            $this->owner->getHeight() > $this->getMaxHeight()
-            || $this->owner->getWidth() > $this->getMaxWidth()
-            || ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension))
+            $this->owner->getHeight() > $this->getMaxHeight() ||
+            $this->owner->getWidth() > $this->getMaxWidth() ||
+            ($this->getAutoRotate() && preg_match('/jpe?g/i', $this->owner->getExtension()))
         ) {
+            $this->ScaleUploadedImage();
+        }
+    }
 
-            // die($this->owner->FileName);
+    public function ScaleUploadedImage()
+    {
+        /* temporary location for image manipulation */
+        $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $this->owner->getExtension();
 
-            // var_dump($this->owner->getURL());
+        $tmp_contents = $this->owner->getString();
 
+        // write to tmp file
+        @file_put_contents($tmp_image, $tmp_contents);
 
-            /* temporary location for image manipulation */
-            $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $extension;
+        $gd = new GDBackend();
 
-            // write to tmp file
+        $gd->loadFrom($tmp_image);
 
-            file_put_contents($tmp_image, $this->owner->getString());
+        if ($gd->getImageResource()) {
 
-            $gd = new GDBackend();
+            /* Clone original */
+            $transformed = $gd;
 
-            $gd->loadFrom($tmp_image);
-
-            if ($gd->getImageResource()) {
-
-                /* Clone original */
-                $transformed = $gd;
-
-                /* If rotation allowed & JPG, test to see if orientation needs switching */
-                if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
-                    $switch_orientation = $this->exifRotation($tmp_image);
-                    if ($switch_orientation) {
-                        $transformed = $transformed->rotate($switch_orientation);
-                    }
+            /* If rotation allowed & JPG, test to see if orientation needs switching */
+            if ($this->getAutoRotate() && preg_match('/jpe?g/i', $this->owner->getExtension())) {
+                $switch_orientation = $this->exifRotation($tmp_image);
+                if ($switch_orientation) {
+                    $transformed = $transformed->rotate($switch_orientation);
                 }
-
-                /* Resize to max values */
-                if (
-                    $transformed && (
-                        $transformed->getWidth() > $this->getMaxWidth()
-                        || $transformed->getHeight() > $this->getMaxHeight()
-                    )
-                ) {
-                    $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
-                }
-
-                /* Write to tmp file and then overwrite original */
-                if ($transformed) {
-                    $transformed->writeTo($tmp_image);
-
-                    $this->owner->setFromString(file_get_contents($tmp_image), $this->owner->FileName);
-                    // $this->owner->setFromLocalFile($tmp_image);
-                    // $this->owner->write();
-                    // file_put_contents($original, file_get_contents($resampled));
-                    unlink($tmp_image);
-                }
-
             }
-            return;
-            // die();
 
-            // var_dump($this->owner->getContentURL())
-            //
-            // var_dump($this->owner);
+            /* Resize to max values */
+            if (
+                $transformed && (
+                    $transformed->getWidth() > $this->getMaxWidth() ||
+                    $transformed->getHeight() > $this->getMaxHeight()
+                )
+            ) {
+                $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
+            }
 
-            // $gd = new GDBackend();
-            //
-            //
-            //
-            // $gd->loadFrom($fullPath);
+            /* Write to tmp file and then overwrite original */
+            if ($transformed) {
+                $orig_hash = $this->owner->getHash();
 
+                $transformed->writeTo($tmp_image);
 
-            $original = $this->owner->getFullPath();
+                $this->owner->File->deleteFile(); // delete original else a rogue copy is left
 
-            /* temporary location for image manipulation */
-            $resampled = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $extension;
+                $this->owner->setFromLocalFile($tmp_image, $this->owner->FileName); // set new image
 
-            $gd = new GD($original);
-
-            /* Backwards compatibility with SilverStripe 3.0 */
-            $image_loaded = (method_exists('GD', 'hasImageResource')) ? $gd->hasImageResource() : $gd->hasGD();
-
-            if ($image_loaded) {
-
-                /* Clone original */
-                $transformed = $gd;
-
-                /* If rotation allowed & JPG, test to see if orientation needs switching */
-                if ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension)) {
-                    $switch_orientation = $this->exifRotation($original);
-                    if ($switch_orientation) {
-                        $transformed = $transformed->rotate($switch_orientation);
-                    }
-                }
-
-                /* Resize to max values */
-                if (
-                    $transformed && (
-                        $transformed->getWidth() > $this->getMaxWidth()
-                        || $transformed->getHeight() > $this->getMaxHeight()
-                    )
-                ) {
-                    $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
-                }
-
-                /* Write to tmp file and then overwrite original */
-                if ($transformed) {
-                    $transformed->writeTo($resampled);
-                    file_put_contents($original, file_get_contents($resampled));
-                    unlink($resampled);
-                }
+                unlink($tmp_image); // delete tmp file
             }
         }
     }
