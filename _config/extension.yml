@@ -1,6 +1,6 @@
 ---
 Name: ScaledUploads
 ---
-SilverStripe\Assets\Image:
+SilverStripe\Assets\Upload:
   extensions:
     - Axllent\ScaledUploads\ScaledUploads
