@@ -20,11 +20,17 @@ Axllent\ScaledUploads\ScaledUploads:
 If you require larger images for a particular DataObject (such as full-page slideshows), but wish to keep all other uploads scaled to a pre-set default, you can simply add something like this to your DataObject:
 
 ```php
-public function onBeforeWrite()
+<?php
+use SilverStripe\Assets\Image;
+
+class BannerImage extends Image
 {
-    Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max-width', 1600);
-    Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max-height', 1600);
-    parent::onBeforeWrite();
+    public function onBeforeWrite()
+    {
+        Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max-width', 1600);
+        Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max-height', 1600);
+        parent::onBeforeWrite();
+    }
 }
 ```
 
