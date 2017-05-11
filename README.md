@@ -6,6 +6,7 @@ An extension to automatically scale down all new uploaded images in SilverStripe
 
 - SilverStripe 3+
 - GD support in PHP
+- Exif support for auto-rotation
 
 ## Usage
 
