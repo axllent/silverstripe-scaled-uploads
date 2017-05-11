@@ -138,6 +138,9 @@ class ScaledUploads extends Extension
      */
     public function exifRotation($file)
     {
+        if (!function_exists('exif_read_data')) {
+            return false;
+        }
         $exif = @exif_read_data($file);
         // var_dump($exif);
         if (!$exif) {

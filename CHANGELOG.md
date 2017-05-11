@@ -2,11 +2,20 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.0.1]
+
+- Test if function `exif_read_data` exists
+
 ## [2.0.0]
+
 - Support for SilverStripe 4
 - Rewrite with new Asset backend
 - Extend Upload rather than Image
 - Add option to scale only height or width
+
+## [1.0.2]
+
+- Test if function `exif_read_data` exists
 
 ## [1.0.1]
 
