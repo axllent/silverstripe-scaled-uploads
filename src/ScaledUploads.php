@@ -24,24 +24,35 @@ use SilverStripe\Core\Extension;
 
 class ScaledUploads extends Extension
 {
+    protected $max_width;
+    protected $max_height;
+    protected $auto_rotate;
+    protected $bypass;
+    protected $force_resampling;
 
     public function __construct()
     {
         $this->config = Config::inst();
+        $this->max_width = $this->currConfig('max-width', 960);
+        $this->max_height = $this->currConfig('max-height', 800);
+        $this->auto_rotate = $this->currConfig('auto-rotate', true);
+        $this->bypass = $this->currConfig('bypass', false);
+        $this->force_resampling = $this->currConfig('force-resampling', true);
     }
 
     public function onAfterLoadIntoFile($file)
     {
-        if ($this->getBypass() || !$file->IsImage) {
+        if ($this->bypass || !$file->IsImage) {
             return;
         }
 
         $extension = $file->getExtension();
 
         if (
-            ($this->getMaxHeight() && $file->getHeight() > $this->getMaxHeight()) ||
-            ($this->getMaxWidth() && $file->getWidth() > $this->getMaxWidth()) ||
-            ($this->getAutoRotate() && preg_match('/jpe?g/i', $file->getExtension()))
+            $this->force_resampling ||
+            ($this->max_height && $file->getHeight() > $this->max_height) ||
+            ($this->max_width && $file->getWidth() > $this->max_width) ||
+            ($this->auto_rotate && preg_match('/jpe?g/i', $file->getExtension()))
         ) {
             $this->ScaleUploadedImage($file);
         }
@@ -68,9 +79,8 @@ class ScaledUploads extends Extension
             $transformed = $gd;
 
             /* If rotation allowed & JPG, test to see if orientation needs switching */
-            if ($this->getAutoRotate() && preg_match('/jpe?g/i', $file->getExtension())) {
+            if ($this->auto_rotate && preg_match('/jpe?g/i', $file->getExtension())) {
                 $switch_orientation = $this->exifRotation($tmp_image);
-                // die('rotating?: ' . $switch_orientation);
                 if ($switch_orientation) {
                     $modified = true;
                     $transformed = $transformed->rotate($switch_orientation);
@@ -81,17 +91,19 @@ class ScaledUploads extends Extension
             if (
                 $transformed &&
                 (
-                    ($this->getMaxWidth() && $transformed->getWidth() > $this->getMaxWidth()) ||
-                    ($this->getMaxHeight() && $transformed->getHeight() > $this->getMaxHeight())
+                    ($this->max_width && $transformed->getWidth() > $this->max_width) ||
+                    ($this->max_height && $transformed->getHeight() > $this->max_height)
                 )
             ) {
-                if ($this->getMaxWidth() && $this->getMaxHeight()) {
-                    $transformed = $transformed->resizeRatio($this->getMaxWidth(), $this->getMaxHeight());
-                } elseif ($this->getMaxWidth()) {
-                    $transformed = $transformed->resizeByWidth($this->getMaxWidth());
+                if ($this->max_width && $this->max_height) {
+                    $transformed = $transformed->resizeRatio($this->max_width, $this->max_height);
+                } elseif ($this->max_width) {
+                    $transformed = $transformed->resizeByWidth($this->max_width);
                 } else {
-                    $transformed = $transformed->resizeByHeight($this->getMaxHeight());
+                    $transformed = $transformed->resizeByHeight($this->max_height);
                 }
+                $modified = true;
+            } elseif ($transformed && $this->force_resampling) {
                 $modified = true;
             }
 
@@ -104,31 +116,22 @@ class ScaledUploads extends Extension
                 $file->File->deleteFile(); // delete original else a rogue copy is left
 
                 $file->setFromLocalFile($tmp_image, $file->FileName); // set new image
-
             }
         }
 
         @unlink($tmp_image); // delete tmp file
     }
 
-    public function getBypass()
-    {
-        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'bypass');
-    }
 
-    public function getMaxWidth()
+    /**
+     * Check current config else return a default
+     * @param String, value
+     * @return value
+     */
+    protected function currConfig($key, $default = false)
     {
-        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-width');
-    }
-
-    public function getMaxHeight()
-    {
-        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'max-height');
-    }
-
-    public function getAutoRotate()
-    {
-        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', 'auto-rotate');
+        $val = $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', $key);
+        return (isset($val)) ? $val : $default;
     }
 
     /**
@@ -141,15 +144,19 @@ class ScaledUploads extends Extension
         if (!function_exists('exif_read_data')) {
             return false;
         }
+
         $exif = @exif_read_data($file);
-        // var_dump($exif);
+
         if (!$exif) {
             return false;
         }
+
         $ort = @$exif['IFD0']['Orientation'];
+
         if (!$ort) {
             $ort = @$exif['Orientation'];
         }
+
         switch ($ort) {
             case 3: // image upside down
                 return '180';
