@@ -37,7 +37,7 @@ class ScaledUploads extends Extension
         $this->max_height = $this->currConfig('max-height', 800);
         $this->auto_rotate = $this->currConfig('auto-rotate', true);
         $this->bypass = $this->currConfig('bypass', false);
-        $this->force_resampling = $this->currConfig('force-resampling', true);
+        $this->force_resampling = $this->currConfig('force-resampling', false);
     }
 
     public function onAfterLoadIntoFile($file)

@@ -8,7 +8,7 @@ Axllent\ScaledUploads\ScaledUploads:
   max-height: 800           # Maximum height - default 800
   auto-rotate: true         # Automatically rotate images that rely on exif information for rotation - default true
   bypass: false             # Bypass (skip) this plugin when uploading - default false
-  force-resampling: false   # Force re-saving (compressing) the image even if it is smaller - default true
+  force-resampling: true   # Force re-saving (compressing) the image even if it is smaller - default false
 ```
 
 The quality of the resampled images is determined by the `default_quality` setting of `Silverstripe\Assets\GDBackend`.
