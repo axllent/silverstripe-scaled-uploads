@@ -110,12 +110,10 @@ class ScaledUploads extends Extension
             /* Write to tmp file and then overwrite original */
             if ($transformed && $modified) {
                 $orig_hash = $file->getHash();
-
                 $transformed->writeTo($tmp_image);
-
                 $file->File->deleteFile(); // delete original else a rogue copy is left
-
                 $file->setFromLocalFile($tmp_image, $file->FileName); // set new image
+                $file->write();
             }
         }
 
