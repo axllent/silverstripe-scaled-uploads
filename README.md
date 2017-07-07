@@ -7,7 +7,6 @@ The extension also supports auto-rotation of JPG images eg: portrait images take
 ## Requirements
 
 - SilverStripe 4+
-- GD support in PHP
 - Exif support for auto-rotation
 
 For SilverStripe 3, please refer to the [SilverStripe3 branch](https://github.com/axllent/silverstripe-scaled-uploads/tree/silverstripe3).

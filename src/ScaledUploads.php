@@ -60,6 +60,9 @@ class ScaledUploads extends Extension
 
     private function ScaleUploadedImage($file)
     {
+
+        $backend = $file->getImageBackend();
+
         /* temporary location for image manipulation */
         $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
 
@@ -68,22 +71,20 @@ class ScaledUploads extends Extension
         // write to tmp file
         @file_put_contents($tmp_image, $tmp_contents);
 
-        $gd = new GDBackend();
+        $backend->loadFrom($tmp_image);
 
-        $gd->loadFrom($tmp_image);
-
-        if ($gd->getImageResource()) {
+        if ($backend->getImageResource()) {
             $modified = false;
 
             /* Clone original */
-            $transformed = $gd;
+            $transformed = $backend;
 
             /* If rotation allowed & JPG, test to see if orientation needs switching */
             if ($this->auto_rotate && preg_match('/jpe?g/i', $file->getExtension())) {
                 $switch_orientation = $this->exifRotation($tmp_image);
                 if ($switch_orientation) {
                     $modified = true;
-                    $transformed = $transformed->rotate($switch_orientation);
+                    $transformed->setImageResource($transformed->getImageResource()->orientate());
                 }
             }
 

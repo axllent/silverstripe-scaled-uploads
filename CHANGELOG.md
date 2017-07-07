@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.0.1]
+
+- Support new Image InterventionBackend
+- No longer rely on GD
+
 ## [2.0.0]
 
 - Support for SilverStripe 4
