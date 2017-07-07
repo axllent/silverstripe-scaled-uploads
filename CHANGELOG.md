@@ -2,9 +2,10 @@
 
 Notable changes to this project will be documented in this file.
 
-## [2.0.2]
+## [2.1.0]
 
-- Write modified file back properly
+- Write modified file properly
+- Update configs
 
 ## [2.0.1]
 
