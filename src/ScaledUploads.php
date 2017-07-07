@@ -42,7 +42,7 @@ class ScaledUploads extends Extension
 
     public function onAfterLoadIntoFile($file)
     {
-        if ($this->bypass || !$file->IsImage) {
+        if ($this->bypass || !$file->getIsImage()) {
             return;
         }
 
