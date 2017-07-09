@@ -17,6 +17,7 @@ to a pre-set default, you can simply add something like this to your DataObject:
 ```php
 <?php
 use SilverStripe\Assets\Image;
+use SilverStripe\Core\Config\Config;
 
 class BannerImage extends Image
 {
