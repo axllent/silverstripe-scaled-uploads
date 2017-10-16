@@ -4,13 +4,20 @@ Notable changes to this project will be documented in this file.
 
 ## [2.1.0]
 
+- Switch to silverstripe-vendormodule
+
+
+## [2.1.0]
+
 - Write modified file properly
 - Update configs
+
 
 ## [2.0.1]
 
 - Support new Image InterventionBackend
 - No longer rely on GD
+
 
 ## [2.0.0]
 
@@ -22,14 +29,17 @@ Notable changes to this project will be documented in this file.
 - Remove default yaml config
 - Test if function `exif_read_data` exists
 
+
 ## [1.0.2]
 
 - Test if function `exif_read_data` exists
+
 
 ## [1.0.1]
 
 - Fix typo in README.md
 - Add CHANGELOG & docs
+
 
 ## [1.0.0]
 
