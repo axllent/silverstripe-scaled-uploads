@@ -2,7 +2,7 @@
 
 Notable changes to this project will be documented in this file.
 
-## [2.1.0]
+## [2.1.1]
 
 - Switch to silverstripe-vendormodule
 
