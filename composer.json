@@ -4,7 +4,7 @@
 	"type": "silverstripe-vendormodule",
 	"homepage": "https://github.com/axllent/silverstripe-scaled-uploads",
 	"keywords": ["silverstripe", "uploads", "image", "upload", "scaled", "rotate"],
-	"license": "The MIT License (MIT)",
+	"license": "MIT",
 	"authors": [
 		{
 			"name": "Ralph Slooten",
