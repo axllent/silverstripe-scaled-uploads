@@ -2,8 +2,6 @@
 
 namespace Axllent\ScaledUploads;
 
-use SilverStripe\Assets\GDBackend;
-use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Extension;
 
@@ -32,11 +30,27 @@ class ScaledUploads extends Extension
     private static $auto_rotate = true;
     private static $bypass = false;
     private static $force_resampling = false;
+    private static $custom_folders = [];
 
     public function onAfterLoadIntoFile($file)
     {
+        // return if not an image
+        if (!$file->getIsImage()) {
+            return;
+        }
 
-        if ($this->currConfig('bypass') || !$file->getIsImage()) {
+        // get parent folder path
+        $folder = rtrim($file->Parent()->getFilename(), '/');
+
+        $custom_folders = $this->currConfig('custom_folders');
+
+        if (!empty($custom_folders[$folder]) && is_array($custom_folders[$folder])) {
+            foreach ($custom_folders[$folder] as $key => $val) {
+                $this->setConfig($key, $val);
+            }
+        }
+
+        if ($this->currConfig('bypass')) {
             return;
         }
 
@@ -47,22 +61,21 @@ class ScaledUploads extends Extension
 
         $extension = $file->getExtension();
 
-        if (
-            $this->config_force_resampling ||
+        if ($this->config_force_resampling ||
             ($this->config_max_height && $file->getHeight() > $this->config_max_height) ||
             ($this->config_max_width && $file->getWidth() > $this->config_max_width) ||
             ($this->config_auto_rotate && preg_match('/jpe?g/i', $file->getExtension()))
         ) {
-            $this->ScaleUploadedImage($file);
+            $this->scaleUploadedImage($file);
         }
     }
 
-    private function ScaleUploadedImage($file)
+    private function scaleUploadedImage($file)
     {
         $backend = $file->getImageBackend();
 
-        /* temporary location for image manipulation */
-        $tmp_image = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
+        // temporary location for image manipulation
+        $tmp_image = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
 
         $tmp_contents = $file->getString();
 
@@ -74,7 +87,7 @@ class ScaledUploads extends Extension
         if ($backend->getImageResource()) {
             $modified = false;
 
-            /* Clone original */
+            // clone original
             $transformed = $backend;
 
             /* If rotation allowed & JPG, test to see if orientation needs switching */
@@ -86,9 +99,8 @@ class ScaledUploads extends Extension
                 }
             }
 
-            /* Resize to max values */
-            if (
-                $transformed &&
+            // resize to max values
+            if ($transformed &&
                 (
                     ($this->config_max_width && $transformed->getWidth() > $this->config_max_width) ||
                     ($this->config_max_height && $transformed->getHeight() > $this->config_max_height)
@@ -106,7 +118,7 @@ class ScaledUploads extends Extension
                 $modified = true;
             }
 
-            /* Write to tmp file and then overwrite original */
+            // write to tmp file and then overwrite original
             if ($transformed && $modified) {
                 $orig_hash = $file->getHash();
                 $transformed->writeTo($tmp_image);
@@ -121,7 +133,7 @@ class ScaledUploads extends Extension
 
     /**
      * Check current config else return a default
-     * @param String, value
+     * @param  String, value
      * @return value
      */
     protected function currConfig($key)
@@ -133,8 +145,20 @@ class ScaledUploads extends Extension
     }
 
     /**
+     * Set current config
+     * @param String, String
+     */
+    protected function setConfig($key, $val)
+    {
+        if (empty($this->config)) {
+            $this->config = Config::inst();
+        }
+        $this->config->set('Axllent\\ScaledUploads\\ScaledUploads', $key, $val);
+    }
+
+    /**
      * exifRotation - return the exif rotation
-     * @param String $FileName
+     * @param  String $FileName
      * @return Int false|angle
      */
     public function exifRotation($file)
@@ -158,13 +182,13 @@ class ScaledUploads extends Extension
         switch ($ort) {
             case 3: // image upside down
                 return '180';
-            break;
+                break;
             case 6: // 90 rotate right
                 return '-90';
-            break;
+                break;
             case 8: // 90 rotate left
                 return '90';
-            break;
+                break;
             default:
                 return false;
         }
