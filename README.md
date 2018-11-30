@@ -4,6 +4,8 @@ An extension to automatically scale down all new uploaded images in SilverStripe
 all uploaded images (resample). If the uploaded image is larger than a preconfigured size, it will be scaled down.
 The extension also supports auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones.
 
+It also supports custom folder configurations to allow for different settings based on the folder they are uploaded into.
+
 ## Requirements
 
 - SilverStripe 4+
