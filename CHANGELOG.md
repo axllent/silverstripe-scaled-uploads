@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.2.0]
+
+- Add custom folder configuration options
+
+
 ## [2.1.1]
 
 - Switch to silverstripe-vendormodule
