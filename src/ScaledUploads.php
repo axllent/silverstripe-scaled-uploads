@@ -2,7 +2,7 @@
 
 namespace Axllent\ScaledUploads;
 
-use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extension;
 
 /**
@@ -22,16 +22,29 @@ use SilverStripe\Core\Extension;
 
 class ScaledUploads extends Extension
 {
+    use Configurable;
+
     /**
      * @config
      */
     private static $max_width = 960;
+
     private static $max_height = 800;
+
     private static $auto_rotate = true;
+
     private static $bypass = false;
+
     private static $force_resampling = false;
+
     private static $custom_folders = [];
 
+    /**
+     * Post data manupulation
+     *
+     * @param  File
+     * @return Null
+     */
     public function onAfterLoadIntoFile($file)
     {
         // return if not an image
@@ -42,22 +55,22 @@ class ScaledUploads extends Extension
         // get parent folder path
         $folder = rtrim($file->Parent()->getFilename(), '/');
 
-        $custom_folders = $this->currConfig('custom_folders');
+        $custom_folders = $this->config()->get('custom_folders');
 
         if (!empty($custom_folders[$folder]) && is_array($custom_folders[$folder])) {
             foreach ($custom_folders[$folder] as $key => $val) {
-                $this->setConfig($key, $val);
+                $this->config()->set($key, $val);
             }
         }
 
-        if ($this->currConfig('bypass')) {
+        if ($this->config()->get('bypass')) {
             return;
         }
 
-        $this->config_max_width = $this->currConfig('max_width');
-        $this->config_max_height = $this->currConfig('max_height');
-        $this->config_auto_rotate = $this->currConfig('auto_rotate');
-        $this->config_force_resampling = $this->currConfig('force_resampling');
+        $this->config_max_width = $this->config()->get('max_width');
+        $this->config_max_height = $this->config()->get('max_height');
+        $this->config_auto_rotate = $this->config()->get('auto_rotate');
+        $this->config_force_resampling = $this->config()->get('force_resampling');
 
         $extension = $file->getExtension();
 
@@ -70,6 +83,12 @@ class ScaledUploads extends Extension
         }
     }
 
+    /**
+     * Scale an image
+     *
+     * @param  File
+     * @return Null
+     */
     private function scaleUploadedImage($file)
     {
         $backend = $file->getImageBackend();
@@ -132,36 +151,11 @@ class ScaledUploads extends Extension
     }
 
     /**
-     * Check current config else return a default
-     * @param  String, value
-     * @return value
-     */
-    protected function currConfig($key)
-    {
-        if (empty($this->config)) {
-            $this->config = Config::inst();
-        }
-        return $this->config->get('Axllent\\ScaledUploads\\ScaledUploads', $key);
-    }
-
-    /**
-     * Set current config
-     * @param String, String
-     */
-    protected function setConfig($key, $val)
-    {
-        if (empty($this->config)) {
-            $this->config = Config::inst();
-        }
-        $this->config->set('Axllent\\ScaledUploads\\ScaledUploads', $key, $val);
-    }
-
-    /**
      * exifRotation - return the exif rotation
      * @param  String $FileName
      * @return Int false|angle
      */
-    public function exifRotation($file)
+    private function exifRotation($file)
     {
         if (!function_exists('exif_read_data')) {
             return false;
