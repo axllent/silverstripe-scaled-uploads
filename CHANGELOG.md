@@ -2,9 +2,9 @@
 
 Notable changes to this project will be documented in this file.
 
-## [2.0.1]
+## [2.2.1]
 
-- Use Configurable instead of Config
+- Use `Configurable` instead of `Config`
 
 
 ## [2.2.0]
