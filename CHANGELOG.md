@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.2.2]
+
+- Fix for `legacy_filenames` - Do not delete original after scaling if `legacy_filenames: true`
+
+
 ## [2.2.1]
 
 - Use `Configurable` instead of `Config`
