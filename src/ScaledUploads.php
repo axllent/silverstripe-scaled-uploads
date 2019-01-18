@@ -2,6 +2,8 @@
 
 namespace Axllent\ScaledUploads;
 
+use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extension;
 
@@ -139,9 +141,11 @@ class ScaledUploads extends Extension
 
             // write to tmp file and then overwrite original
             if ($transformed && $modified) {
-                $orig_hash = $file->getHash();
                 $transformed->writeTo($tmp_image);
-                $file->File->deleteFile(); // delete original else a rogue copy is left
+                // if !legacy_filenames then delete original, else rogue copies are left on filesystem
+                if (!Config::inst()->get(FlysystemAssetStore::class, 'legacy_filenames')) {
+                    $file->File->deleteFile();
+                }
                 $file->setFromLocalFile($tmp_image, $file->FileName); // set new image
                 $file->write();
             }
