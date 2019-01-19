@@ -16,7 +16,6 @@
 
 class ScaledUploads extends DataExtension
 {
-
     public static $max_width = 960;
 
     public static $max_height = 800;
@@ -27,10 +26,10 @@ class ScaledUploads extends DataExtension
 
     public function onBeforeWrite()
     {
-        $this->ScaleUpload();
+        $this->scaleUpload();
     }
 
-    public function ScaleUpload()
+    public function scaleUpload()
     {
 
         /* don't use Image->exists() as it is implemented differently for Image */
@@ -40,15 +39,27 @@ class ScaledUploads extends DataExtension
 
         $extension = $this->owner->getExtension();
 
-        if (
-            $this->owner->getHeight() > $this->getMaxHeight()
-            || $this->owner->getWidth() > $this->getMaxWidth()
+        $imagefile = $this->owner->getFullPath();
+
+        if (!$imagefile) {
+            return;
+        }
+
+        // We cannot use $image->get(Height|Width) because that required the record to have been saved
+        list($this->src_width, $this->src_height) = @getimagesize($imagefile);
+
+        if (!$this->src_width || !$this->src_height) {
+            return;
+        }
+
+        if ($this->src_height > $this->getMaxHeight()
+            || $this->src_width > $this->getMaxWidth()
             || ($this->getAutoRotate() && preg_match('/jpe?g/i', $extension))
         ) {
             $original = $this->owner->getFullPath();
 
             /* temporary location for image manipulation */
-            $resampled = TEMP_FOLDER .'/resampled-' . mt_rand(100000, 999999) . '.' . $extension;
+            $resampled = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $extension;
 
             $gd = new GD($original);
 
@@ -56,7 +67,6 @@ class ScaledUploads extends DataExtension
             $image_loaded = (method_exists('GD', 'hasImageResource')) ? $gd->hasImageResource() : $gd->hasGD();
 
             if ($image_loaded) {
-
                 /* Clone original */
                 $transformed = $gd;
 
@@ -69,8 +79,8 @@ class ScaledUploads extends DataExtension
                 }
 
                 /* Resize to max values */
-                if (
-                    $transformed && (
+                if ($transformed &&
+                    (
                         $transformed->getWidth() > $this->getMaxWidth()
                         || $transformed->getHeight() > $this->getMaxHeight()
                     )
@@ -136,13 +146,13 @@ class ScaledUploads extends DataExtension
         switch ($ort) {
             case 3: // image upside down
                 return '180';
-            break;
+                break;
             case 6: // 90 rotate right & switch max sizes
                 return '-90';
-            break;
+                break;
             case 8: // 90 rotate left & switch max sizes
                 return '90';
-            break;
+                break;
             default:
                 return false;
         }
