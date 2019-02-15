@@ -15,7 +15,8 @@
 		"issues": "https://github.com/axllent/silverstripe-scaled-uploads/issues"
 	},
     "require": {
-		"silverstripe/framework": "^4.0"
+		"silverstripe/framework": "^4.0",
+		"spatie/image-optimizer": "^1.1.4"
 	},
     "autoload": {
         "psr-4": {
