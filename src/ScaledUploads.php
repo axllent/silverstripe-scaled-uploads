@@ -6,6 +6,7 @@ use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extension;
+use Spatie\ImageOptimizer\OptimizerChainFactory;
 
 /**
  * Automatically scale down uploaded images
@@ -142,6 +143,11 @@ class ScaledUploads extends Extension
             // write to tmp file and then overwrite original
             if ($transformed && $modified) {
                 $transformed->writeTo($tmp_image);
+
+                // Optimize the transformed image
+                $optimizerChain = OptimizerChainFactory::create();
+                $optimizerChain->optimize($tmp_image);
+
                 // if !legacy_filenames then delete original, else rogue copies are left on filesystem
                 if (!Config::inst()->get(FlysystemAssetStore::class, 'legacy_filenames')) {
                     $file->File->deleteFile();
