@@ -1,6 +1,6 @@
 # Configuration
 
-To set your own configuration, simply create a `mysite/_config/scaled-uploads.yml`.
+To set your own configuration, simply create a `app/_config/scaled-uploads.yml`.
 
 ```yaml
 Axllent\ScaledUploads\ScaledUploads:
