@@ -55,7 +55,7 @@ class ScaledUploads extends Extension
         }
 
         // get parent folder path
-        $folder = rtrim($file->Parent()->getFilename(), '/');
+        $folder = rtrim(strval($file->Parent()->getFilename()), '/');
 
         $custom_folders = $this->config()->get('custom_folders');
 
