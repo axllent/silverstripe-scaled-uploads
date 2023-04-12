@@ -6,7 +6,6 @@ use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extension;
-use function is_null;
 
 /**
  * Automatically scale down uploaded images
@@ -56,9 +55,7 @@ class ScaledUploads extends Extension
         }
 
         // get parent folder path
-        $parentFolder = $file->Parent()->getFilename();
-        if (is_null($parentFolder)) $parentFolder = '';
-        $folder = rtrim($parentFolder, '/');
+        $folder = rtrim(strval($file->Parent()->getFilename()), '/');
 
         $custom_folders = $this->config()->get('custom_folders');
 
