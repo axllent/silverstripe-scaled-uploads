@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.3.4]
+
+- Add support for Silverstripe 5
+
+
 ## [2.2.3]
 
 - Prevent warning on PHP 8.1
@@ -41,7 +46,7 @@ Notable changes to this project will be documented in this file.
 
 ## [2.0.0]
 
-- Support for SilverStripe 4
+- Support for Silverstripe 4
 - Rewrite with new Asset backend
 - Extend Upload rather than Image
 - Add option to scale only height or width
