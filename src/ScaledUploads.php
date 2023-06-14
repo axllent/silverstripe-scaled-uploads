@@ -69,6 +69,34 @@ class ScaledUploads extends Extension
     private static $custom_folders = [];
 
     /**
+     * Internal dynamic property generated from config vars
+     *
+     * @var int
+     */
+    private $config_max_width;
+
+    /**
+     * Internal dynamic property generated from config vars
+     *
+     * @var int
+     */
+    private $config_max_height;
+
+    /**
+     * Internal dynamic property generated from config vars
+     *
+     * @var bool
+     */
+    private $config_auto_rotate;
+
+    /**
+     * Internal dynamic property generated from config vars
+     *
+     * @var bool
+     */
+    private $config_force_resampling;
+
+    /**
      * Post data manipulation
      *
      * @param $file File Silverstripe file object
