@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.3.5]
+
+- PHP 8.2 compatibility
+
+
 ## [2.3.4]
 
 - Add support for Silverstripe 5
