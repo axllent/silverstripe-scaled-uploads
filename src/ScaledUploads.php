@@ -38,7 +38,8 @@ class ScaledUploads extends Extension
             return;
         }
 
-        $file = Resizer::create()->runFromDbFile($file);
+        $file = Resizer::create()
+            ->runFromDbFile($file);
     }
 
 

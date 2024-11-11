@@ -6,6 +6,7 @@ use Axllent\ScaledUploads\ScaledUploads;
 use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
 use SilverStripe\Assets\Image;
 use SilverStripe\Assets\Image_Backend;
+use SilverStripe\Assets\Storage\DBFile;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
@@ -21,35 +22,35 @@ class Resizer
      * file patterns to skip - e.g. '__resampled'
      * @var array
      */
-    private static array $patterns_to_skip;
+    private static array $patterns_to_skip = [];
 
     /**
      * names of folders that should be treated differently
      *
      * @var array
      */
-    private static array $custom_folders;
+    private static array $custom_folders = [];
 
     /**
      * Maximum width
      *
      * @config
      */
-    private static int $max_width = 2800;
+    private static int $max_width = 3600;
 
     /**
      * Maximum height
      *
      * @config
      */
-    private static int $max_height = 1200;
+    private static int $max_height = 2160; // 0.6y of width
 
     /**
      * Maximum size of the file in megabytes
      *
      * @config
      */
-    private static float $max_size_in_mb = 1;
+    private static float $max_size_in_mb = 0.4;
 
     /**
      * Default resize quality
@@ -150,12 +151,12 @@ class Resizer
         return $this;
     }
 
-    public function setMaxWidth(?float $maxWidth = 2800): static
+    public function setMaxWidth(?int $maxWidth = 2800): static
     {
         $this->maxWidth = $maxWidth;
         return $this;
     }
-    public function setMaxHeight(?float $maxHeight = 1200): static
+    public function setMaxHeight(?int $maxHeight = 1200): static
     {
         $this->maxHeight = $maxHeight;
         return $this;
@@ -222,8 +223,8 @@ class Resizer
 
                 // If rotation allowed & JPG, test to see if orientation needs switching
                 $modified = $this->rotate() ? true : $modified;
-                $modified = $this->resize() ? true : $modified;
                 $modified = $this->convertToWebp() ? true : $modified;
+                $modified = $this->resize() ? true : $modified;
                 $modified = $this->compress() ? true : $modified;
                 if ($modified || $this->forceResampling) {
                     $this->writeToFile();
@@ -236,15 +237,18 @@ class Resizer
         return $file;
     }
 
-    protected function loadBackend(): bool
+    protected function loadBackend(?Image $file = null): bool
     {
 
-        $this->transformed = $this->file->getImageBackend();
+        if (!$file) {
+            $file = $this->file;
+        }
+        $this->transformed = $file->getImageBackend();
 
         // temporary location for image manipulation
-        $this->tmpImagePath = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $this->file->getExtension();
+        $this->tmpImagePath = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
 
-        $this->tmpImageContent = $this->file->getString();
+        $this->tmpImageContent = $this->transformed->getImageResource();
 
         // write to tmp file
         @file_put_contents($this->tmpImagePath, $this->tmpImageContent);
@@ -306,11 +310,13 @@ class Resizer
     {
         $modified = false;
         // If rotation allowed & JPG, test to see if orientation needs switching
+        // @todo  - this is untested and may not work!
         if ($this->transformed && $this->needsRotating()) {
             $switchOrientation = $this->exifRotation();
             if ($switchOrientation) {
                 $modified = true;
                 $this->transformed->setImageResource($this->transformed->getImageResource()->orientate());
+                $this->writeToFile();
             }
         }
         return $modified;
@@ -338,11 +344,13 @@ class Resizer
         $modified = false;
         // Convert to WebP and save
         if ($this->transformed && $this->needsConvertingToWebp()) {
+            /**
+             * @var  DBFile $tmpFile $tmpFile
+             */
             $tmpFile = $this->file->Convert('webp');
-            $this->file->setFromLocalFile($tmpFile->getFilename(), $tmpFile->FileName);
-            $tmpFile->delete();
-            $tmpFile->File->deleteFile();
-            //todo: maybe write???
+            $this->deleteOldFile();
+            $this->file->File = $tmpFile;
+            $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $tmpFile->FileName.'.webp');
             $this->saveAndPublish($this->file);
             $this->loadBackend();
             $modified = true;
@@ -357,20 +365,22 @@ class Resizer
         // Check if WebP is smaller
         if ($this->transformed && $this->needsCompressing()) {
             $this->transformed->writeTo($this->tmpImagePath);
-            $sizeCheck = $this->isFileSizeGreaterThan($this->tmpImagePath);
+            $sizeCheck = $this->fileIsTooBig($this->tmpImagePath);
             $step = 1;
             while ($sizeCheck && $step > 0) {
                 // reduce quality
                 $modified = true;
-                $this->transformed->setQuality($this->quality * $step);
+                unlink($this->tmpImagePath);
+                $this->transformed->setQuality($this->quality * $step * 100);
                 $this->transformed->writeTo($this->tmpImagePath);
                 // new round
-                $sizeCheck = $this->isFileSizeGreaterThan($this->tmpImagePath);
+                $sizeCheck = $this->fileIsTooBig($this->tmpImagePath);
                 $step -= $this->qualityReductionIncrement;
             }
         }
         return $modified;
     }
+
 
     protected function writeToFile()
     {
@@ -379,15 +389,19 @@ class Resizer
             $this->transformed->writeTo($this->tmpImagePath);
             // if !legacy_filenames then delete original, else rogue copies are left on filesystem
             if (file_exists($this->tmpImagePath)) {
-                if (!Config::inst()->get(FlysystemAssetStore::class, 'legacy_filenames')) {
-                    $this->file->File->deleteFile();
-                }
-                $this->file->setFromLocalFile($this->tmpImagePath, $this->file->FileName); // set new image
+                $this->deleteOldFile();
+                $this->file->setFromLocalFile($this->tmpImagePath); // set new image
                 $this->saveAndPublish($this->file);
             }
         }
     }
 
+    protected function deleteOldFile()
+    {
+        if (!Config::inst()->get(FlysystemAssetStore::class, 'legacy_filenames')) {
+            $this->file->File->deleteFile();
+        }
+    }
 
     /**
      * exifRotation - return the exif rotation
@@ -425,14 +439,14 @@ class Resizer
     }
 
 
-    protected function isFileSizeGreaterThan(string $filePath): ?float
+    protected function fileIsTooBig(string $filePath): bool
     {
         $fileSize = filesize($filePath);
         $maxSize = $this->maxSizeInMb * 1024 * 1024;
         if ($fileSize > $maxSize) {
-            return round(($fileSize - $maxSize) / $maxSize * 100);
+            return true;
         }
-        return null;
+        return false;
     }
 
     protected function saveAndPublish(Image $image)
