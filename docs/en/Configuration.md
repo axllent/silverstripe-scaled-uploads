@@ -2,33 +2,38 @@
 
 To set your own configuration, simply create a `app/_config/scaled-uploads.yml`.
 
+For defaults, please refer to the [ScaledUploads.php](src/ScaledUploads/Api/Resizer.php) file.
+
 ```yaml
-Axllent\ScaledUploads\ScaledUploads:
-  max_width: 960            # Maximum width - default 960
+Axllent\ScaledUploads\Api:
+  max_width: 960            # Maximum width - s
   max_height: 800           # Maximum height - default 800
-  auto_rotate: true         # Automatically rotate images that rely on exif information for rotation - default true
+  max_size_in_mb: 0.5       # The maximum size of the image in MB
+  default_quality: 0.9      # The default quality of the image conversion (0-1)
   bypass: false             # Bypass (skip) this plugin when uploading - default false
-  force_resampling: true    # Force re-saving the image even if it is smaller - default false
+  force_resampling: false   # Force re-saving the image even if it is smaller - default false
+  patterns_to_skip:         # Patterns to skip (eg: *.svg)
+    - '.svg'                # this is not necessary as SVGs are not resized
+    - '__resampled'         # find in string
+    - '/[^a-zA-Z0-9]/'      # supports basic regex
   custom_folders:
-    Gallery:                 # Custom upload folder and configuration
-      max_width: 1600
-      max_height: 1200
-    ProfileImages:           # Custom upload folder and configuration
-      max_width: 400
-      max_height: 400
+    Gallery:                # Custom upload folder and configuration
+      maxWidth: 1600
+      maxHeight: 1200
+      useWebp: false
+    MyOther/Folder:         # Custom upload folder and configuration
+      bypass: true
 ```
 
 ## Custom Folders
 
 Custom folders will overwrite your default configuration if the parent path (of the uploaded image) matches one of the `custom_folders`.
 
-**Note**: your configuration folders should not contain a trailing slash.
-
-These settings are then merged into the ScaledUploads configuration overwriting the configurations set. In the above example, images uploaded to `Gallery` will inherit the `auto_rotate`, `bypass` & `force_resampling` settings, however will be set to a maximum of 1600x1200px.
+**Note**: your configuration folders should not contain a starting or trailing slash.
 
 ## Extending Image
 
-Another way of setting custom configurations is by extending `Image`, however the above custom folder configuration ensures that all images remain as `SilverStripe\Assets\Image` which is less prone to issues.
+Another way of setting custom configurations is by extending `Image`, however the above custom folder configuration ensures that all images remain as `SilverStripe\Assets\Image` which is less prone to issues (you could also use an `Extension` of course).
 
 ```php
 <?php
@@ -39,15 +44,17 @@ class BannerImage extends Image
 {
     public function onBeforeWrite()
     {
-        Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max_width', 1600);
-        Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'max_height', 1600);
+        Config::modify()->set('Axllent\\ScaledUploads\\Api\\Resizer', 'max_width', 1600);
         parent::onBeforeWrite();
     }
 }
+
+
+
 ```
 
 If you need to bypass (skip) ScaledUploads for any particular reason, use:
 
 ```php
-Config::inst()->update('Axllent\\ScaledUploads\\ScaledUploads', 'bypass', true);
+Config::modify()->set('Axllent\\ScaledUploads\\Api\\Resizer', 'bypass', true);
 ```

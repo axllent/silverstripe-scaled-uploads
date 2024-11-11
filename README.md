@@ -1,8 +1,7 @@
 # Automatically scale down uploaded images for Silverstripe
 
 An extension to automatically scale down all new uploaded images in Silverstripe and (optionally) compress
-all uploaded images (resample). If the uploaded image is larger than a pre-configured size, it will be scaled down.
-The extension also supports auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones.
+all uploaded images (resample) and converts them to webp. If the uploaded image is larger than a pre-configured size, it will be scaled down. The extension no longer supports auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones. However, this should be done around here:  vendor/silverstripe/assets/src/InterventionBackend.php:278
 
 It also supports custom folder configurations to allow for different settings based on the folder they are uploaded into.
 

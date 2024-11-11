@@ -15,6 +15,9 @@ class Resizer
     use Injectable;
     use Configurable;
 
+
+    private static $bypass_all = false;
+
     /**
      *
      * file patterns to skip - e.g. '__resampled'
@@ -64,62 +67,36 @@ class Resizer
      */
     private static bool $use_webp = true;
 
-
-    /**
-     * Auto-rotate scaled images
-     *
-     * @config
-     */
-    private static bool $auto_rotate = true;
-
-
     /**
      * Force resampling of images even if not stricly necessary
      *
      * @config
      */
     private static bool $force_resampling = false;
-
-    private static array $image_extensions = [
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-        'webp',
-    ];
-
     protected bool $dryRun = false;
-
     protected bool $verbose = false;
-
-    protected array $imageExtensions;
-
+    protected bool $bypass;
     protected array $patternsToSkip;
     protected array $customFolders;
-
     protected int|null $maxWidth;
-
     protected int|null $maxHeight;
-
     protected float|null $maxSizeInMb;
-
     protected float $quality;
-
     protected bool $useWebp;
-
-    protected bool|null $autoRotate;
-
     protected bool|null $forceResampling;
-
     protected Image_Backend $transformed;
-
     protected $file;
-
-    protected $tmpImagePath;
-
-    protected $tmpImageContent;
-
-    protected $switchOrientation;
+    protected string $tmpImagePath;
+    protected string $tmpImageContent;
+    protected array $originalValues = [];
+    private const CUSTOM_VALUES_ALLOWED = [
+        'maxWidth',
+        'maxHeight',
+        'maxSizeInMb',
+        'quality',
+        'useWebp',
+        'forceResampling',
+    ];
 
     /**
      * When trying to get in range for size, we keep reducing the quality by this step.
@@ -137,12 +114,6 @@ class Resizer
     public function setVerbose(?bool $verbose = true): static
     {
         $this->verbose = $verbose;
-        return $this;
-    }
-
-    public function setImageExtensions(array $array): static
-    {
-        $this->imageExtensions = $array;
         return $this;
     }
 
@@ -196,6 +167,7 @@ class Resizer
 
     public function __construct()
     {
+        $this->bypass          = $this->config()->get('bypass_all');
         $this->patternsToSkip  = $this->config()->get('patterns_to_skip');
         $this->customFolders   = $this->config()->get('custom_folders');
         $this->maxWidth        = $this->config()->get('max_width');
@@ -203,9 +175,7 @@ class Resizer
         $this->maxSizeInMb     = $this->config()->get('max_size_in_mb');
         $this->quality         = $this->config()->get('default_quality');
         $this->useWebp         = $this->config()->get('use_webp');
-        $this->autoRotate      = $this->config()->get('auto_rotate');
         $this->forceResampling = $this->config()->get('force_resampling');
-        $this->imageExtensions = $this->config()->get('image_extensions');
     }
 
     /**
@@ -224,18 +194,29 @@ class Resizer
             echo '---' . PHP_EOL;
             if ($this->dryRun) {
                 echo 'DRY RUN' . PHP_EOL;
+            } else {
+                echo 'REAL RUN' . PHP_EOL;
             }
         }
-        // get parent folder path
-        if (! $this->canBeConverted($this->file->getFilename(), $this->file->getExtension())) {
+        $path = $this->file->getFilename();
+        if (!$path) {
             if ($this->verbose) {
-                echo 'Cannot convert ' . $this->file->getFilename() . PHP_EOL;
+                echo 'Cannot convert image with ID ' . $file->ID. ' as Filename is empty.' . PHP_EOL;
+            }
+            return $this->file;
+        }
+        // we do this first as it may contain the bypass flag
+        $this->applyCustomFolders($path);
+
+        if (! $this->canBeConverted($path, $this->file->getExtension())) {
+            if ($this->verbose) {
+                echo 'Cannot convert ' . $path . PHP_EOL;
             }
             return $this->file;
         }
         if (
             $this->forceResampling
-            || $this->needsRotating()
+            // || $this->needsRotating()
             || $this->needsResizing()
             || $this->needsConvertingToWebp()
             || $this->needsCompressing()
@@ -246,7 +227,6 @@ class Resizer
                 // clone original
 
                 // If rotation allowed & JPG, test to see if orientation needs switching
-                $modified = $this->rotate() ? true : $modified;
                 $modified = $this->convertToWebp() ? true : $modified;
                 $modified = $this->resize() ? true : $modified;
                 $modified = $this->compress() ? true : $modified;
@@ -263,7 +243,7 @@ class Resizer
 
         } else {
             if ($this->verbose) {
-                echo 'No need to convert ' . $this->file->getFilename() . PHP_EOL;
+                echo 'No need to resize / convert ' . $this->file->getFilename() . PHP_EOL;
             }
         }
         return $file;
@@ -272,26 +252,79 @@ class Resizer
 
     protected function canBeConverted(string $filePath, string $extension): bool
     {
-        $extension = strtolower($extension);
-        $folder = rtrim(strval(dirname($filePath)), '/');
-        if (!empty($customFolders[$folder]) && is_array($this->customFolders[$folder])) {
-            foreach ($this->customFolders[$folder] as $key => $val) {
-                $this->config()->set($key, $val);
-            }
-        }
-        if ($this->config()->get('bypass')) {
+
+        if ($this->bypass) {
             return false;
         }
-        if (!in_array($extension, $this->imageExtensions)) {
+        if (! $this->file->getIsImage()) {
             return false;
         }
-        $filePath = $this->file->getFilename();
         foreach ($this->patternsToSkip as $pattern) {
-            if (strpos($filePath, $pattern) !== false) {
-                return false;
+            // Detect if the pattern is likely a regex
+            if ($this->looksLikeRegex($pattern)) {
+                // Treat it as a regex
+                if (preg_match($pattern, $filePath)) {
+                    return false;
+                }
+            } else {
+                if (strpos($filePath, $pattern) !== false) {
+                    return false;
+                }
             }
         }
         return true;
+    }
+
+    /**
+     *
+     * Allows you to add custom settings at runtime without changing the config layer
+     * @return void
+     */
+    public function applyCustomFolders(string $filePath, ?array $moreCustomValues = []): void
+    {
+        $folder = trim(strval(dirname($filePath)), '/');
+        // Check if original values need to be restored
+        if (!empty($this->originalValues)) {
+            foreach ($this->originalValues as $key => $value) {
+                $this->$key = $value; // Restore original values
+            }
+            $this->originalValues = []; // Clear after restoration
+        }
+
+        // Apply custom folder settings if available
+        if (!empty($this->customFolders[$folder]) && is_array($this->customFolders[$folder])) {
+            $this->applyCustomFoldersInner($this->customFolders[$folder]);
+            $this->applyCustomFoldersInner($moreCustomValues);
+        }
+    }
+
+    protected function applyCustomFoldersInner(array $toApply)
+    {
+        foreach ($toApply as $key => $val) {
+            if (!in_array($key, self::CUSTOM_VALUES_ALLOWED)) {
+                user_error(
+                    'Invalid custom folder setting: ' . $key. '.' .
+                    'Allowed values are: '.print_r(self::CUSTOM_VALUES_ALLOWED, 1),
+                    E_USER_WARNING
+                );
+            }
+            // Store the original value if not already stored
+            if (!isset($this->originalValues[$key])) {
+                $this->originalValues[$key] = $this->$key ?? null;
+            }
+            // Apply the custom value
+            $this->$key = $val;
+        }
+    }
+
+    protected function looksLikeRegex(string $pattern): bool
+    {
+        $delimiters = ['/', '#', '~', '%']; // Common regex delimiters
+        $firstChar = $pattern[0] ?? '';
+        $lastChar = substr($pattern, -1);
+
+        // Check if the first and last characters are the same and part of known delimiters
+        return in_array($firstChar, $delimiters, true) && $firstChar === $lastChar;
     }
 
     protected function loadBackend(?Image $file = null): bool
@@ -329,37 +362,9 @@ class Resizer
         return $this->useWebp && $this->file->getExtension() !== 'webp';
     }
 
-    public function needsRotating(): bool
-    {
-        return ($this->autoRotate && preg_match('/jpe?g/i', $this->file->getExtension()));
-    }
-
     public function needsCompressing(): bool
     {
         return ($this->maxSizeInMb && $this->file->getAbsoluteSize() > $this->maxSizeInMb * 1024 * 1024);
-    }
-
-    protected function rotate(): bool
-    {
-        $modified = false;
-        // If rotation allowed & JPG, test to see if orientation needs switching
-        // @todo  - this is untested and may not work!
-        if ($this->transformed && $this->needsRotating()) {
-            $switchOrientation = $this->exifRotation();
-            if ($switchOrientation) {
-                if ($this->verbose) {
-                    echo 'Would rotate ' . $this->file->getFilename() . ' by ' . $switchOrientation . ' degrees' . PHP_EOL;
-                }
-                if ($this->dryRun) {
-                    return false;
-                }
-                $modified = true;
-                $this->transformed->setImageResource($this->transformed->getImageResource()->rotate($switchOrientation));
-                $this->writeToFile();
-                $this->loadBackend();
-            }
-        }
-        return $modified;
     }
 
     protected function resize(): bool
@@ -467,42 +472,6 @@ class Resizer
         }
     }
 
-    /**
-     * exifRotation - return the exif rotation
-     *
-     * @return int false|angle
-     */
-    protected function exifRotation(): bool|string
-    {
-        if (!function_exists('exif_read_data')) {
-            return false;
-        }
-
-        $exif = @exif_read_data($this->file);
-
-        if (!$exif) {
-            return false;
-        }
-
-        $ort = @$exif['IFD0']['Orientation'];
-
-        if (!$ort) {
-            $ort = @$exif['Orientation'];
-        }
-
-        switch ($ort) {
-            case 3: // image upside down
-                return '180';
-            case 6: // 90 rotate right
-                return '-90';
-            case 8: // 90 rotate left
-                return '90';
-            default:
-                return false;
-        }
-    }
-
-
     protected function fileIsTooBig(string $filePath): bool
     {
         $fileSize = filesize($filePath);
@@ -515,6 +484,9 @@ class Resizer
 
     protected function saveAndPublish(Image $image)
     {
+        if ($this->dryRun) {
+            return;
+        }
         $isPublished = $image->isPublished();
         $image->write();
         if ($isPublished) {
