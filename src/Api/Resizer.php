@@ -2,7 +2,6 @@
 
 namespace Axllent\ScaledUploads\Api;
 
-use Axllent\ScaledUploads\ScaledUploads;
 use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
 use SilverStripe\Assets\Image;
 use SilverStripe\Assets\Image_Backend;
@@ -10,7 +9,6 @@ use SilverStripe\Assets\Storage\DBFile;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
-use SplFileInfo;
 
 class Resizer
 {
@@ -405,7 +403,7 @@ class Resizer
             $tmpFile = $this->file->Convert('webp');
             $this->deleteOldFile();
             $this->file->File = $tmpFile;
-            $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $tmpFile->FileName.'.webp');
+            $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $this->file->getFilename().'.webp');
             $this->saveAndPublish($this->file);
             $this->loadBackend();
 
@@ -453,7 +451,7 @@ class Resizer
             // if !legacy_filenames then delete original, else rogue copies are left on filesystem
             if (file_exists($this->tmpImagePath)) {
                 $this->deleteOldFile();
-                $this->file->setFromLocalFile($this->tmpImagePath); // set new image
+                $this->file->setFromLocalFile($this->tmpImagePath, $this->file->getFilename()); // set new image
                 $this->saveAndPublish($this->file);
             }
         }

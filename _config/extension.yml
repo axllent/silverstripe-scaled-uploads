@@ -3,4 +3,4 @@ Name: ScaledUploads
 ---
 SilverStripe\Assets\Upload:
   extensions:
-    - Axllent\ScaledUploads\ScaledUploads
+    - Axllent\ScaledUploads\Extensions\ScaledUploadsExtension

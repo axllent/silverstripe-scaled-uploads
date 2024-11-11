@@ -1,6 +1,6 @@
 <?php
 
-namespace Axllent\ScaledUploads;
+namespace Axllent\ScaledUploads\Extensions;
 
 use Axllent\ScaledUploads\Api\Resizer;
 use SilverStripe\Core\Config\Config;
@@ -22,7 +22,7 @@ use SilverStripe\Core\Extension;
  *
  * @author: Techno Joy development team (www.technojoy.co.nz)
  */
-class ScaledUploads extends Extension
+class ScaledUploadsExtension extends Extension
 {
     /**
      * Post data manipulation
