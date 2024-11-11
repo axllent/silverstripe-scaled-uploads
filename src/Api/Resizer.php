@@ -86,6 +86,7 @@ class Resizer
     protected bool|null $forceResampling;
     protected Image_Backend $transformed;
     protected $file;
+    protected $filePath;
     protected string $tmpImagePath;
     protected string $tmpImageContent;
     protected array $originalValues = [];
@@ -198,19 +199,19 @@ class Resizer
                 echo 'REAL RUN' . PHP_EOL;
             }
         }
-        $path = $this->file->getFilename();
-        if (!$path) {
+        $this->filePath = $this->file->getFilename();
+        if (!$this->filePath) {
             if ($this->verbose) {
-                echo 'Cannot convert image with ID ' . $file->ID. ' as Filename is empty.' . PHP_EOL;
+                echo 'ERROR: Cannot convert image with ID ' . $file->ID. ' as Filename is empty.' . PHP_EOL;
             }
             return $this->file;
         }
         // we do this first as it may contain the bypass flag
-        $this->applyCustomFolders($path);
+        $this->applyCustomFolders($this->filePath);
 
-        if (! $this->canBeConverted($path, $this->file->getExtension())) {
+        if (! $this->canBeConverted($this->filePath, $this->file->getExtension())) {
             if ($this->verbose) {
-                echo 'Cannot convert ' . $path . PHP_EOL;
+                echo 'Skipping: ' . $this->filePath . PHP_EOL;
             }
             return $this->file;
         }
@@ -237,13 +238,13 @@ class Resizer
                 @unlink($this->tmpImagePath); // delete tmp file
             } else {
                 if ($this->verbose) {
-                    echo 'ERROR: Cannot load backend for ' . $this->file->getFilename() . PHP_EOL;
+                    echo 'ERROR: Cannot load backend for: ' . $this->filePath . PHP_EOL;
                 }
             }
 
         } else {
             if ($this->verbose) {
-                echo 'No need to resize / convert ' . $this->file->getFilename() . PHP_EOL;
+                echo 'No need to resize / convert: ' . $this->filePath . PHP_EOL;
             }
         }
         return $file;
@@ -329,6 +330,7 @@ class Resizer
 
     protected function loadBackend(?Image $file = null): bool
     {
+        // reset path, just in case...
         if (!$file) {
             $file = $this->file;
         }
@@ -373,7 +375,7 @@ class Resizer
         // resize to max values
         if ($this->transformed && $this->needsResizing()) {
             if ($this->verbose) {
-                echo 'Resizing ' . $this->file->getFilename() . ' to ' . $this->maxWidth . 'x' . $this->maxHeight . PHP_EOL;
+                echo 'Resizing ' . ' to ' . ($this->maxWidth ?: '[any width]') . 'x' . ($this->maxHeight ?: '[any height]').': ' .$this->filePath . PHP_EOL;
             }
             if ($this->dryRun) {
                 return false;
@@ -396,7 +398,7 @@ class Resizer
         // Convert to WebP and save
         if ($this->transformed && $this->needsConvertingToWebp()) {
             if ($this->verbose) {
-                echo 'Converting ' . $this->file->getFilename() . ' to webp'. PHP_EOL;
+                echo 'Converting to webp: ' . $this->filePath . PHP_EOL;
             }
             if ($this->dryRun) {
                 return false;
@@ -408,7 +410,8 @@ class Resizer
             $tmpFile = $this->file->Convert('webp');
             $this->deleteOldFile();
             $this->file->File = $tmpFile;
-            $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $this->file->getFilename().'.webp');
+            $this->filePath .= '.webp';
+            $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $this->filePath);
             $this->saveAndPublish($this->file);
             $this->loadBackend();
 
@@ -422,7 +425,7 @@ class Resizer
         // Check if WebP is smaller
         if ($this->transformed && $this->needsCompressing()) {
             if ($this->verbose) {
-                echo 'Compression ' . $this->file->getFilename() . ' to '.$this->maxSizeInMb.' megabytes' . PHP_EOL;
+                echo 'Compressing to '.$this->maxSizeInMb.'MB: ' . $this->filePath . PHP_EOL;
             }
             if ($this->dryRun) {
                 return false;
@@ -456,7 +459,7 @@ class Resizer
             // if !legacy_filenames then delete original, else rogue copies are left on filesystem
             if (file_exists($this->tmpImagePath)) {
                 $this->deleteOldFile();
-                $this->file->setFromLocalFile($this->tmpImagePath, $this->file->getFilename()); // set new image
+                $this->file->setFromLocalFile($this->tmpImagePath, $this->filePath); // set new image
                 $this->saveAndPublish($this->file);
             }
         }
