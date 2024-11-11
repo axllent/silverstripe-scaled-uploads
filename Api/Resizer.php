@@ -90,6 +90,9 @@ class Resizer
         'webp',
     ];
 
+    protected bool $dryRun = false;
+
+    protected bool $verbose = false;
 
     protected array $imageExtensions;
 
@@ -126,6 +129,18 @@ class Resizer
      * @var float
      */
     protected float $qualityReductionIncrement = 0.1;
+
+    public function setDryRun(?bool $dryRun = true): static
+    {
+        $this->dryRun = $dryRun;
+        return $this;
+    }
+
+    public function setVerbose(?bool $verbose = true): static
+    {
+        $this->verbose = $verbose;
+        return $this;
+    }
 
     public function setImageExtensions(array $array): static
     {
@@ -203,10 +218,21 @@ class Resizer
      */
     public function runFromDbFile(Image $file): Image
     {
+        if ($this->dryRun) {
+            $this->verbose = true;
+        }
         $this->file = $file;
-
+        if ($this->verbose) {
+            echo '---' . PHP_EOL;
+            if ($this->dryRun) {
+                echo 'DRY RUN' . PHP_EOL;
+            }
+        }
         // get parent folder path
         if (! $this->canBeConverted($this->file->getFilename(), $this->file->getExtension())) {
+            if ($this->verbose) {
+                echo 'Cannot convert ' . $this->file->getFilename() . PHP_EOL;
+            }
             return $this->file;
         }
         if (
@@ -230,36 +256,21 @@ class Resizer
                     $this->writeToFile();
                 }
 
+                @unlink($this->tmpImagePath); // delete tmp file
+            } else {
+                if ($this->verbose) {
+                    echo 'ERROR: Cannot load backend for ' . $this->file->getFilename() . PHP_EOL;
+                }
             }
 
-            @unlink($this->tmpImagePath); // delete tmp file
+        } else {
+            if ($this->verbose) {
+                echo 'No need to convert ' . $this->file->getFilename() . PHP_EOL;
+            }
         }
         return $file;
     }
 
-    protected function loadBackend(?Image $file = null): bool
-    {
-
-        if (!$file) {
-            $file = $this->file;
-        }
-        $this->transformed = $file->getImageBackend();
-
-        // temporary location for image manipulation
-        $this->tmpImagePath = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
-
-        $this->tmpImageContent = $this->transformed->getImageResource();
-
-        // write to tmp file
-        @file_put_contents($this->tmpImagePath, $this->tmpImageContent);
-
-        $this->transformed->loadFrom($this->tmpImagePath);
-
-        if ($this->transformed->getImageResource()) {
-            return true;
-        }
-        return false;
-    }
 
     protected function canBeConverted(string $filePath, string $extension): bool
     {
@@ -284,6 +295,30 @@ class Resizer
         }
         return true;
     }
+
+    protected function loadBackend(?Image $file = null): bool
+    {
+        if (!$file) {
+            $file = $this->file;
+        }
+        $this->transformed = $file->getImageBackend();
+
+        // temporary location for image manipulation
+        $this->tmpImagePath = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
+
+        $this->tmpImageContent = $this->transformed->getImageResource();
+
+        // write to tmp file
+        @file_put_contents($this->tmpImagePath, $this->tmpImageContent);
+
+        $this->transformed->loadFrom($this->tmpImagePath);
+
+        if ($this->transformed->getImageResource()) {
+            return true;
+        }
+        return false;
+    }
+
 
     public function needsResizing(): bool
     {
@@ -314,9 +349,16 @@ class Resizer
         if ($this->transformed && $this->needsRotating()) {
             $switchOrientation = $this->exifRotation();
             if ($switchOrientation) {
+                if ($this->verbose) {
+                    echo 'Would rotate ' . $this->file->getFilename() . ' by ' . $switchOrientation . ' degrees' . PHP_EOL;
+                }
+                if ($this->dryRun) {
+                    return false;
+                }
                 $modified = true;
-                $this->transformed->setImageResource($this->transformed->getImageResource()->orientate());
+                $this->transformed->setImageResource($this->transformed->getImageResource()->rotate($switchOrientation));
                 $this->writeToFile();
+                $this->loadBackend();
             }
         }
         return $modified;
@@ -327,6 +369,13 @@ class Resizer
         $modified = false;
         // resize to max values
         if ($this->transformed && $this->needsResizing()) {
+            if ($this->verbose) {
+                echo 'Resizing ' . $this->file->getFilename() . ' to ' . $this->maxWidth . 'x' . $this->maxHeight . PHP_EOL;
+            }
+            if ($this->dryRun) {
+                return false;
+            }
+            $modified = true;
             if ($this->maxWidth && $this->maxHeight) {
                 $this->transformed = $this->transformed->resizeRatio($this->maxWidth, $this->maxHeight);
             } elseif ($this->maxWidth) {
@@ -334,7 +383,6 @@ class Resizer
             } else {
                 $this->transformed = $this->transformed->resizeByHeight($this->maxHeight);
             }
-            $modified = true;
         }
         return $modified;
     }
@@ -344,6 +392,13 @@ class Resizer
         $modified = false;
         // Convert to WebP and save
         if ($this->transformed && $this->needsConvertingToWebp()) {
+            if ($this->verbose) {
+                echo 'Converting ' . $this->file->getFilename() . ' to webp'. PHP_EOL;
+            }
+            if ($this->dryRun) {
+                return false;
+            }
+            $modified = true;
             /**
              * @var  DBFile $tmpFile $tmpFile
              */
@@ -353,7 +408,6 @@ class Resizer
             $this->file->setFromString($tmpFile->getImageBackend()->getImageResource(), $tmpFile->FileName.'.webp');
             $this->saveAndPublish($this->file);
             $this->loadBackend();
-            $modified = true;
 
         }
         return $modified;
@@ -364,6 +418,12 @@ class Resizer
         $modified = false;
         // Check if WebP is smaller
         if ($this->transformed && $this->needsCompressing()) {
+            if ($this->verbose) {
+                echo 'Compression ' . $this->file->getFilename() . ' to '.$this->maxSizeInMb.' megabytes' . PHP_EOL;
+            }
+            if ($this->dryRun) {
+                return false;
+            }
             $this->transformed->writeTo($this->tmpImagePath);
             $sizeCheck = $this->fileIsTooBig($this->tmpImagePath);
             $step = 1;
@@ -384,6 +444,9 @@ class Resizer
 
     protected function writeToFile()
     {
+        if ($this->dryRun) {
+            return;
+        }
         // write to tmp file and then overwrite original
         if ($this->transformed) {
             $this->transformed->writeTo($this->tmpImagePath);
@@ -398,6 +461,9 @@ class Resizer
 
     protected function deleteOldFile()
     {
+        if ($this->dryRun) {
+            return;
+        }
         if (!Config::inst()->get(FlysystemAssetStore::class, 'legacy_filenames')) {
             $this->file->File->deleteFile();
         }
