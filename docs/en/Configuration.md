@@ -2,7 +2,7 @@
 
 To set your own configuration, simply create a `app/_config/scaled-uploads.yml`.
 
-For defaults, please refer to the [ScaledUploads.php](src/ScaledUploads/Api/Resizer.php) file.
+For defaults, please refer to the [ScaledUploads.php](/src/ScaledUploads/Api/Resizer.php) file.
 
 ```yaml
 Axllent\ScaledUploads\Api\Resizer:
