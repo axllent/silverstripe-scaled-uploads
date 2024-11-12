@@ -2,7 +2,7 @@
 
 Reduce your footprint!
 
-For all newly uploaded images in Silverstripe, this extension will automatically scale down (reduce width / height), compress, and convert them to webp.
+For all newly uploaded images in Silverstripe, this extension will automatically scale down (reduce width / height), compress, and convert them to webp to ensure your images are as light as possible, without significantly affecting quality. 
 
 ## Requirements
 
