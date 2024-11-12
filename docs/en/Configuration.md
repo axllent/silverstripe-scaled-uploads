@@ -23,6 +23,7 @@ Axllent\ScaledUploads\Api\Resizer:
       useWebp: false
       quality: 55
       forceResampling: true
+      maxSizeInMb: 0.1
     My/Other/Folder:         # Custom upload folder and configuration
       bypass: true
 ```
