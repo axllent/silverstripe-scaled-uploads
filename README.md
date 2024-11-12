@@ -25,7 +25,7 @@ use SilverStripe\Assets\Image;
 $runner = Resizer::create()
     ->setMaxHeight(100)
     ->setMaxFileSizeInMb(0.6)
-    ->setDryRun($dryRun)
+    ->setDryRun(true)
     ->setVerbose(true);
 
 $imagesIds = Image::get()->sort(['ID' => 'DESC'])->columnUnique();
