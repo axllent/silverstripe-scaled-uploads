@@ -61,3 +61,32 @@ If you need to bypass (skip) ScaledUploads for any particular reason, use:
 ```php
 Config::modify()->set('Axllent\\ScaledUploads\\Api\\Resizer', 'bypass', true);
 ```
+
+## Allowing webp
+
+You may need to add this to your config files:
+```yml
+
+SilverStripe\Assets\File:
+  file_types:
+    webp: 'Webp Image'
+  allowed_extensions:
+    - webp
+  app_categories:
+    image:
+      - webp
+    image/supported:
+      - webp
+  class_for_file_extension:
+    webp: SilverStripe\Assets\Image
+
+SilverStripe\Assets\Storage\DBFile:
+  supported_images:
+    - image/webp
+
+SilverStripe\MimeValidator\MimeUploadValidator:
+  MimeTypes:
+    webp:
+      - 'image/webp'
+
+```
