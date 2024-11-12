@@ -49,5 +49,5 @@ If you would like to batch process existing images then you can use the [Resize 
 ## Rotation
 
 This extension no longer supports auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones. 
-However, this should be done around here:  `vendor/silverstripe/assets/src/InterventionBackend.php:278` (untested). 
+However, this should now also be part of Silverstripe core functionality - see  `vendor/silverstripe/assets/src/InterventionBackend.php:278` (not sure if or how this works). 
 
