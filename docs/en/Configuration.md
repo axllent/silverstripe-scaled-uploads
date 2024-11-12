@@ -5,7 +5,7 @@ To set your own configuration, simply create a `app/_config/scaled-uploads.yml`.
 For defaults, please refer to the [ScaledUploads.php](src/ScaledUploads/Api/Resizer.php) file.
 
 ```yaml
-Axllent\ScaledUploads\Api:
+Axllent\ScaledUploads\Api\Resizer:
   max_width: 960            # Maximum width - s
   max_height: 800           # Maximum height - default 800
   max_size_in_mb: 0.5       # The maximum size of the image in MB
