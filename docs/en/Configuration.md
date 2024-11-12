@@ -27,7 +27,7 @@ Axllent\ScaledUploads\Api\Resizer:
 
 ## Custom Folders
 
-Custom folders will overwrite your default configuration if the parent path (of the uploaded image) matches one of the `custom_folders`.
+Custom folders will overwrite your default configuration if the folder of the image at hand matches one of the `custom_folders` listed.
 
 **Note**: your configuration folders should not contain a starting or trailing slash.
 
