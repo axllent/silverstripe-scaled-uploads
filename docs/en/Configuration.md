@@ -21,6 +21,8 @@ Axllent\ScaledUploads\Api\Resizer:
       maxWidth: 1600
       maxHeight: 1200
       useWebp: false
+      quality: 55
+      forceResampling: true
     My/Other/Folder:         # Custom upload folder and configuration
       bypass: true
 ```
