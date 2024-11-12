@@ -42,12 +42,12 @@ foreach ($imagesIds as $imageID) {
 composer require axllent/silverstripe-scaled-uploads
 ```
 
-## Batch Process existing images
+## Batch process existing images
 
 If you would like to batch process existing images then you can use the [Resize All Images Module](https://github.com/sunnysideup/silverstripe-resize-all-images/) that extends this module. 
 
 ## Rotation
 
-This extension no longer supports auto-rotation of JPG images eg: portrait images taken with digital cameras or cellphones. 
+This extension no longer supports auto-rotation of JPG images (i.e. portrait images taken with digital cameras or cellphones). 
 However, this should now also be part of Silverstripe core functionality - see  `vendor/silverstripe/assets/src/InterventionBackend.php:278` (not sure if or how this works). 
 
