@@ -16,8 +16,34 @@ For Silverstripe 3, please refer to the [Silverstripe3 branch](https://github.co
 
 Simply install the module and then set your own limits. For this, Please refer to the [Configuration.md](docs/en/Configuration.md) file for options.
 
+To use the functionality somewhere else, you can do something like this:
+```php
+
+use Axllent\ScaledUploads\Api\Resizer;
+use SilverStripe\Assets\Image;
+
+$runner = Resizer::create()
+    ->setMaxHeight(100)
+    ->setMaxFileSizeInMb(0.6)
+    ->setDryRun($dryRun)
+    ->setVerbose(true);
+
+$imagesIds = Image::get()->sort(['ID' => 'DESC'])->columnUnique();
+foreach ($imagesIds as $imageID) {
+    $image = Image::get()->byID($imageID);
+    if ($image->exists()) {
+        $runner->runFromDbFile($image);
+    }
+}
+
+```
+
 ## Installation
 
 ```shell
 composer require axllent/silverstripe-scaled-uploads
 ```
+
+## Batch Process existing images
+
+If you would like to batch process existing images then you can use the [Resize All Images Module](https://github.com/sunnysideup/silverstripe-resize-all-images/) that extends this module. 
