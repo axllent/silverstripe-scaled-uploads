@@ -212,11 +212,11 @@ class ScaledUploads extends Extension
     }
 
     /**
-     * exifRotation - return the exif rotation
+     * ExifRotation - return the exif rotation
      *
      * @param mixed $file Physical file path
      *
-     * @return int false|angle
+     * @return int bool
      */
     private function exifRotation($file)
     {
@@ -236,24 +236,6 @@ class ScaledUploads extends Extension
             $ort = @$exif['Orientation'];
         }
 
-        switch ($ort) {
-            case 3: // image upside down
-                return '180';
-
-                break;
-
-            case 6: // 90 rotate right
-                return '-90';
-
-                break;
-
-            case 8: // 90 rotate left
-                return '90';
-
-                break;
-
-            default:
-                return false;
-        }
+        return $ort > 0;
     }
 }
