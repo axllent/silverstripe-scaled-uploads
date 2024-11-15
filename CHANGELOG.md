@@ -2,6 +2,11 @@
 
 Notable changes to this project will be documented in this file.
 
+## [2.3.6]
+
+- Fix: Handle all exif rotation states
+
+
 ## [2.3.5]
 
 - PHP 8.2 compatibility
