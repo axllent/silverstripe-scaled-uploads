@@ -173,7 +173,10 @@ class ScaledUploads extends Extension
                 $switch_orientation = $this->exifRotation($tmp_image);
                 if ($switch_orientation) {
                     $modified = true;
-                    $transformed->setImageResource($transformed->getImageResource()->orientate());
+                    // orientate() is available in Intervention Image 2.5+, but is automatic in 3+
+                    if (method_exists($transformed->getImageResource(), 'orientate')) {
+                        $transformed->setImageResource($transformed->getImageResource()->orientate());
+                    }
                 }
             }
 
