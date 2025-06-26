@@ -8,8 +8,8 @@ It also supports custom folder configurations to allow for different settings ba
 
 ## Requirements
 
-- Silverstripe ^4.0 || ^5.0
-- EXIF support for auto-rotation
+-   Silverstripe ^4.0 || ^5.0 || ^6.0
+-   EXIF support for auto-rotation
 
 For Silverstripe 3, please refer to the [Silverstripe3 branch](https://github.com/axllent/silverstripe-scaled-uploads/tree/silverstripe3).
 
