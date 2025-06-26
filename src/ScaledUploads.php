@@ -153,7 +153,7 @@ class ScaledUploads extends Extension
         $backend = $file->getImageBackend();
 
         // temporary location for image manipulation
-        $tmp_image = TEMP_FOLDER . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
+        $tmp_image = TEMP_PATH . '/resampled-' . mt_rand(100000, 999999) . '.' . $file->getExtension();
 
         $tmp_contents = $file->getString();
 
