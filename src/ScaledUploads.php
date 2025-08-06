@@ -5,6 +5,7 @@ namespace Axllent\ScaledUploads;
 use SilverStripe\Assets\Flysystem\FlysystemAssetStore;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Environment;
 use SilverStripe\Core\Extension;
 
 /**
@@ -97,6 +98,13 @@ class ScaledUploads extends Extension
     private $config_force_resampling;
 
     /**
+     * Set the process memory limit for image manipulation, eg 768M
+     *
+     * @var [int|string]
+     */
+    private static $memory_limit;
+
+    /**
      * Post data manipulation
      *
      * @param $file File Silverstripe file object
@@ -129,6 +137,13 @@ class ScaledUploads extends Extension
         $this->config_max_height       = $this->config()->get('max_height');
         $this->config_auto_rotate      = $this->config()->get('auto_rotate');
         $this->config_force_resampling = $this->config()->get('force_resampling');
+        $config_memory_limit           = $this->config()->get('memory_limit');
+
+        // if set, update the PHP memory limit
+        if (!empty($config_memory_limit)) {
+            Environment::setMemoryLimitMax($config_memory_limit);
+            Environment::increaseMemoryLimitTo($config_memory_limit);
+        }
 
         $extension = $file->getExtension();
 
@@ -168,7 +183,7 @@ class ScaledUploads extends Extension
             // clone original
             $transformed = $backend;
 
-            // If rotation allowed & JPG, test to see if orientation needs switching
+            // if rotation allowed & jPG, test to see if orientation needs switching
             if ($this->config_auto_rotate && preg_match('/jpe?g/i', $file->getExtension())) {
                 $switch_orientation = $this->exifRotation($tmp_image);
                 if ($switch_orientation) {

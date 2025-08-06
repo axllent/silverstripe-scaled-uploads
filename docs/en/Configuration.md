@@ -4,19 +4,26 @@ To set your own configuration, simply create a `app/_config/scaled-uploads.yml`.
 
 ```yaml
 Axllent\ScaledUploads\ScaledUploads:
-  max_width: 960            # Maximum width - default 960
-  max_height: 800           # Maximum height - default 800
-  auto_rotate: true         # Automatically rotate images that rely on exif information for rotation - default true
-  bypass: false             # Bypass (skip) this plugin when uploading - default false
-  force_resampling: true    # Force re-saving the image even if it is smaller - default false
+  max_width: 960 # default maximum width - default 960
+  max_height: 800 # default maximum height - default 800
+  auto_rotate: true # automatically rotate images that rely on exif information for rotation - default true
+  bypass: false # bypass (skip) this plugin when uploading - default false
+  force_resampling: true # force re-saving the image even if it is smaller - default false
+  memory_limit: 768M # optionally increase the PHP memory limit to handle large images
   custom_folders:
-    Gallery:                 # Custom upload folder and configuration
+    Gallery: # custom folder path and configuration
       max_width: 1600
       max_height: 1200
-    ProfileImages:           # Custom upload folder and configuration
+    ProfileImages: # custom folder path and configuration
       max_width: 400
       max_height: 400
 ```
+
+## Memory limits
+
+The module is initially restricted to the PHP memory limit configured for your website. This limitation may lead to errors when processing excessively large images, so you might need to temporarily raise the memory limit.
+
+You have the option to set the `memory_limit` to a value of your choice (as long as your server has sufficient memory available). This adjustment will temporarily increase Silverstripe's memory limit for each upload request only. It will not affect the maximum memory allowed for the rest of the website. Setting this to either `0` or `-1` will disable all limits, however extreme caution should be taken before considering this approach, as it is far safer to set restrictions.
 
 ## Custom Folders
 
